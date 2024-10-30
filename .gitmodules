@@ -1,0 +1,3 @@
+[submodule "feedstocks/cernlib-feedstock"]
+	path = feedstocks/cernlib-feedstock
+	url = https://github.com/hep-forge/cernlib-feedstock
