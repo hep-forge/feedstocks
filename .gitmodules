@@ -1,0 +1,16 @@
+[submodule "feedstocks/cernlib-feedstock"]
+	path = feedstocks/cernlib-feedstock
+	url = https://github.com/hep-forge/cernlib-feedstock
+[submodule "feedstocks/lhapdf-feedstock"]
+	path = feedstocks/lhapdf-feedstock
+	url = https://github.com/hep-forge/lhapdf-feedstock
+
+[submodule "examples/helloworld-feedstock"]
+	path = examples/helloworld-feedstock
+	url = https://github.com/hep-forge/helloworld-feedstock
+[submodule "examples/helloworld"]
+	path = examples/helloworld
+	url = https://github.com/hep-forge/helloworld
+[submodule "examples/examples/feedstock"]
+	path = examples/helloworld-feedstock
+	url = https://github.com/hep-forge/helloworld-feedstock.git
