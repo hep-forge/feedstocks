@@ -4,13 +4,13 @@
 [submodule "feedstocks/lhapdf-feedstock"]
 	path = feedstocks/lhapdf-feedstock
 	url = https://github.com/hep-forge/lhapdf-feedstock
+[submodule "feedstocks/qcdnum-feedstock"]
+	path = feedstocks/qcdnum-feedstock
+	url = https://github.com/hep-forge/qcdnum-feedstock
 
-[submodule "examples/helloworld-feedstock"]
-	path = examples/helloworld-feedstock
-	url = https://github.com/hep-forge/helloworld-feedstock
 [submodule "examples/helloworld"]
 	path = examples/helloworld
-	url = https://github.com/hep-forge/helloworld
-[submodule "examples/examples/feedstock"]
+	url = https://github.com/hep-forge/helloworld.git
+[submodule "examples/helloworld-feedstock"]
 	path = examples/helloworld-feedstock
 	url = https://github.com/hep-forge/helloworld-feedstock.git
