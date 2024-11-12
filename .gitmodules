@@ -1,9 +1,6 @@
 [submodule "feedstocks/cernlib-feedstock"]
 	path = feedstocks/cernlib-feedstock
 	url = https://github.com/hep-forge/cernlib-feedstock
-[submodule "feedstocks/lhapdf-feedstock"]
-	path = feedstocks/lhapdf-feedstock
-	url = https://github.com/hep-forge/lhapdf-feedstock
 [submodule "feedstocks/qcdnum-feedstock"]
 	path = feedstocks/qcdnum-feedstock
 	url = https://github.com/hep-forge/qcdnum-feedstock
@@ -14,3 +11,30 @@
 [submodule "examples/helloworld-feedstock"]
 	path = examples/helloworld-feedstock
 	url = https://github.com/hep-forge/helloworld-feedstock.git
+[submodule "feedstocks/apfelxx-feedstock"]
+	path = feedstocks/apfelxx-feedstock
+	url = https://github.com/hep-forge/apfelxx-feedstock.git
+[submodule "feedstocks/lhapdf-feedstock"]
+	path = feedstocks/lhapdf-feedstock
+	url = https://github.com/hep-forge/lhapdf-feedstock.git
+[submodule "feedstocks/dyturbo-feedstock"]
+	path = feedstocks/dyturbo-feedstock
+	url = https://github.com/hep-forge/dyturbo-feedstock.git
+[submodule "feedstocks/eko-feedstock"]
+	path = feedstocks/eko-feedstock
+	url = https://github.com/hep-forge/eko-feedstock.git
+[submodule "feedstocks/qcdloop-feedstock"]
+	path = feedstocks/qcdloop-feedstock
+	url = https://github.com/hep-forge/qcdloop-feedstock.git
+[submodule "feedstocks/apfelgrid-feedstock"]
+	path = feedstocks/apfelgrid-feedstock
+	url = https://github.com/hep-forge/apfelgrid-feedstock.git
+[submodule "feedstocks/xfitter-feedstock"]
+	path = feedstocks/xfitter-feedstock
+	url = https://github.com/hep-forge/xfitter-feedstock.git
+[submodule "feedstocks/nnpdf-feedstock"]
+	path = feedstocks/nnpdf-feedstock
+	url = https://github.com/hep-forge/nnpdf-feedstock.git
+[submodule "feedstocks/pythia-feedstock"]
+	path = feedstocks/pythia-feedstock
+	url = https://github.com/hep-forge/pythia-feedstock.git

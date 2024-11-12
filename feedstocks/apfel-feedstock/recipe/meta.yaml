@@ -1,0 +1,47 @@
+{% set versions = {
+    "2.7.1" : "8096814185ead3ae74562497b532fe3038a92c098b7208d220dbb0a6ca49269c"
+} %}
+
+
+{% set version = environ.get('COMMIT_VERSION', None) %}
+{% set version = version or versions.keys()|first %}
+{% set version = version|string %}
+
+package:
+  name: {{ environ.get('ANACONDA_PACKAGE', "apfel")|string|lower }}
+  version: {{ environ.get('ANACONDA_VERSION', version)|replace('/', '.')|replace('-', '.') }}
+
+source:
+  url: "https://github.com/scarrazza/apfel/archive/refs/tags/{{ version }}.tar.gz"
+  {% if versions.get(version, None) %}
+  sha256: {{ versions.get(version) }}
+  {% endif %}
+
+requirements:
+  build:
+    - {{ compiler('gfortran') }}   # GNU Fortran compiler
+    - {{ compiler('c') }}          # GNU C compiler
+    - {{ compiler('cxx') }}        # GNU C++ compiler
+    
+    - cmake                        # Build system
+    - make                         # Make utility
+
+  host:
+    - python>=3.6
+    - lhapdf
+
+  run:
+    - python>=3.6
+    - lhapdf
+
+about:
+  home: "http://apfel.mi.infn.it/"
+  license: "GPL-3.0"
+  summary: "APFEL: A PDF Evolution Library"
+  description: |
+        APFEL is a library able to perform DGLAP evolution up to NNLO in QCD and to NLO in QED, both with pole and MSbar masses.
+        The coupled DGLAP QCD+QED evolution equations are solved in x-space by means of higher order interpolations and Runge-Kutta techniques.
+
+extra:
+  recipe-maintainers:
+    - meiyasan

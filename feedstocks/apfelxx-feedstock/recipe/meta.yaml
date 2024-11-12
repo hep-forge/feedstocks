@@ -1,0 +1,52 @@
+{% set versions = {
+    "4.8.0" : "d577cf0f8cbcfae18699670941827c6c72dfec4aeb14321365c36937ace6a34a"
+} %}
+
+
+{% set version = environ.get('COMMIT_VERSION', None) %}
+{% set version = version or versions.keys()|first %}
+{% set version = version|string %}
+
+package:
+  name: {{ environ.get('ANACONDA_PACKAGE', "apfelxx")|string|lower }}
+  version: {{ environ.get('ANACONDA_VERSION', version)|replace('/', '.')|replace('-', '.') }}
+
+source:
+  url: "https://github.com/vbertone/apfelxx/archive/refs/tags/{{ version }}.tar.gz"
+  {% if versions.get(version, None) %}
+  sha256: {{ versions.get(version) }}
+  {% endif %}
+  patches:
+    {% if version <= "4.8.0" %}
+    - patches/algorithm.patch
+    {% endif %}
+
+requirements:
+  build:
+    - {{ compiler('gfortran') }}   # GNU Fortran compiler
+    - {{ compiler('c') }}          # GNU C compiler
+    - {{ compiler('cxx') }}        # GNU C++ compiler
+    
+    - cmake                        # Build system
+    - make                         # Make utility
+    - pybind11
+
+  host:
+    - python>=3.6
+    - pybind11
+    - lhapdf
+
+  run:
+    - python>=3.6
+    - lhapdf
+
+about:
+  home: "https://github.com/vbertone/apfelxx"
+  license: "GPL-3.0"
+  summary: "A PDF evolution library in C++"
+  description: |
+      APFEL++ is a C++ rewriting of the Fortran 77 code APFEL originally conceived to evolve collinear parton distribution functions (PDFs).
+
+extra:
+  recipe-maintainers:
+    - meiyasan

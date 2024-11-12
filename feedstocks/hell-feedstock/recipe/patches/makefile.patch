@@ -1,0 +1,34 @@
+From 7145041e5cd55e92fec7389f15375c2b6e2ab9d2 Mon Sep 17 00:00:00 2001
+From: Marco Meyer-Conde <marco@tcu.ac.jp>
+Date: Tue, 12 Nov 2024 16:51:54 +0900
+Subject: [PATCH] makefile
+
+---
+ Makefile | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 8a2bc14..6939708 100644
+--- a/Makefile
++++ b/Makefile
+@@ -2,7 +2,7 @@ CC = g++
+ FF = gfortran
+ 
+ # your CUBA 4.x path (example: /usr/local/Cuba-4.x)
+-#CUBA_PATH =
++CUBA_PATH = ${BUILD_PREFIX}
+ 
+ # your gsl path
+ GSL_PATH = $(shell gsl-config --prefix)
+@@ -49,7 +49,7 @@ OBJECTS = $(obj)/hell.o $(obj)/DGLAPevol.o $(obj)/gammaNLO.o $(obj)/gammaNNLO.o
+ 	$(obj)/interpolation.o $(obj)/hyp_2F1.o $(obj)/complex_functions.o \
+ 	$(obj)/special_functions.o
+ 
+-examples: examples/test_hell examples/create_deltaP_tables examples/create_deltaU_tables examples/create_deltaC_tables examples/create_deltaCmass_tables examples/create_deltaChiggs_tables examples/create_deltaCQQbarSQ_tables examples/create_deltaCQQbarPairTripleDiff_tables examples/create_deltaCQQbarPairDoubleDiff_tables examples/create_deltaCQQbarPairDoubleDiff_tablesAux examples/create_deltaCQQbarPair_alphascheck examples/create_deltaCDY_tables examples/plot_deltaU
++examples: examples/test_hell examples/create_deltaP_tables examples/create_deltaU_tables examples/create_deltaC_tables examples/create_deltaCmass_tables examples/create_deltaChiggs_tables examples/create_deltaCQQbarSQ_tables examples/create_deltaCQQbarPairTripleDiff_tables
+ 
+ all: examples
+ lib: lib$(PKG).a
+-- 
+2.47.0
+

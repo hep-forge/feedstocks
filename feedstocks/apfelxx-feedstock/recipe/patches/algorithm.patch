@@ -1,0 +1,13 @@
+diff --git a/src/kernel/matrix.cc b/src/kernel/matrix.cc
+index c88ccc390..abd97fc0c 100644
+--- a/src/kernel/matrix.cc
++++ b/src/kernel/matrix.cc
+@@ -8,6 +8,7 @@
+ #include "apfel/messages.h"
+ 
+ #include <functional>
++#include <algorithm>
+ 
+ namespace apfel
+ {
+-- 
