@@ -38,3 +38,15 @@
 [submodule "feedstocks/pythia-feedstock"]
 	path = feedstocks/pythia-feedstock
 	url = https://github.com/hep-forge/pythia-feedstock.git
+[submodule "feedstocks/chaplin-feedstock"]
+	path = feedstocks/chaplin-feedstock
+	url = https://github.com/hep-forge/chaplin-feedstock.git
+[submodule "feedstocks/cubature-feedstock"]
+	path = feedstocks/cubature-feedstock
+	url = https://github.com/hep-forge/cubature-feedstock.git
+[submodule "feedstocks/cuba-feedstock"]
+	path = feedstocks/cuba-feedstock
+	url = https://github.com/hep-forge/cuba-feedstock.git
+[submodule "feedstocks/nlojetxx-feedstock"]
+	path = feedstocks/nlojetxx-feedstock
+	url = https://github.com/hep-forge/nlojetxx-feedstock.git
