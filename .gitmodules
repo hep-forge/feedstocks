@@ -50,3 +50,6 @@
 [submodule "feedstocks/nlojetxx-feedstock"]
 	path = feedstocks/nlojetxx-feedstock
 	url = https://github.com/hep-forge/nlojetxx-feedstock.git
+[submodule "feedstocks/root-feedstock"]
+	path = feedstocks/root-feedstock
+	url = https://github.com/hep-forge/root-feedstock.git
