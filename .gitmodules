@@ -53,3 +53,6 @@
 [submodule "feedstocks/root-feedstock"]
 	path = feedstocks/root-feedstock
 	url = https://github.com/hep-forge/root-feedstock.git
+[submodule "feedstocks/openmotif-feedstock"]
+	path = feedstocks/openmotif-feedstock
+	url = https://github.com/hep-forge/openmotif-feedstock.git
