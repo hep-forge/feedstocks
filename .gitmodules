@@ -56,3 +56,30 @@
 [submodule "feedstocks/openmotif-feedstock"]
 	path = feedstocks/openmotif-feedstock
 	url = https://github.com/hep-forge/openmotif-feedstock.git
+[submodule "feedstocks/fastjet-feedstock"]
+        path = feedstocks/fastjet-feedstock
+        url = https://github.com/hep-forge/fastjet-feedstock.git
+[submodule "feedstocks/hathor-feedstock"]
+        path = feedstocks/hathor-feedstock
+        url = https://github.com/hep-forge/hathor-feedstock.git
+[submodule "feedstocks/hellx-feedstock"]
+        path = feedstocks/hellx-feedstock
+        url = https://github.com/hep-forge/hellx-feedstock.git
+[submodule "feedstocks/hell-feedstock"]
+        path = feedstocks/hell-feedstock
+        url = https://github.com/hep-forge/hell-feedstock.git
+[submodule "feedstocks/hoppet-feedstock"]
+        path = feedstocks/hoppet-feedstock
+        url = https://github.com/hep-forge/hoppet-feedstock.git
+[submodule "feedstocks/mcfm-feedstock"]
+        path = feedstocks/mcfm-feedstock
+        url = https://github.com/hep-forge/mcfm-feedstock.git
+[submodule "feedstocks/pineappl-feedstock"]
+        path = feedstocks/pineappl-feedstock
+        url = https://github.com/hep-forge/pineappl-feedstock.git
+[submodule "feedstocks/ploughshare-feedstock"]
+        path = feedstocks/ploughshare-feedstock
+        url = https://github.com/hep-forge/ploughshare-feedstock.git
+[submodule "feedstocks/yadism-feedstock"]
+        path = feedstocks/yadism-feedstock
+        url = https://github.com/hep-forge/yadism-feedstock.git
