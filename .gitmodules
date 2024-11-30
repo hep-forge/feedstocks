@@ -83,3 +83,6 @@
 [submodule "feedstocks/yadism-feedstock"]
         path = feedstocks/yadism-feedstock
         url = https://github.com/hep-forge/yadism-feedstock.git
+[submodule "feedstocks/applgrid-feedstock"]
+	path = feedstocks/applgrid-feedstock
+	url = https://github.com/hep-forge/applgrid-feedstock.git
