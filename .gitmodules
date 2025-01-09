@@ -1,3 +1,4 @@
+
 [submodule "feedstocks/cernlib-feedstock"]
 	path = feedstocks/cernlib-feedstock
 	url = https://github.com/hep-forge/cernlib-feedstock
@@ -83,6 +84,33 @@
 [submodule "feedstocks/applgrid-feedstock"]
 	path = feedstocks/applgrid-feedstock
 	url = https://github.com/hep-forge/applgrid-feedstock.git
-[submodule "feedstocks/root2-feedstock"]
-	path = feedstocks/root-feedstock
-	url = git@github.com:hep-forge/root-feedstock.git
+[submodule "feedstocks/difftop-feedstock"]
+	path = feedstocks/difftop-feedstock
+	url = git@github.com:hep-forge/difftop-feedstock.git
+[submodule "feedstocks/root-plus-feedstock"]
+	path = feedstocks/root-plus-feedstock
+	url = git@github.com:hep-forge/root-plus-feedstock.git
+[submodule "feedstocks/fastjet-contrib-feedstock"]
+	path = feedstocks/fastjet-contrib-feedstock
+	url = git@github.com:hep-forge/fastjet-contrib-feedstock.git
+[submodule "feedstocks/fastjet-feedstock"]
+	path = feedstocks/fastjet-feedstock
+	url = git@github.com:hep-forge/fastjet-feedstock.git
+[submodule "feedstocks/fastnlo-feedstock"]
+	path = feedstocks/fastnlo-feedstock
+	url = git@github.com:hep-forge/fastnlo-feedstock.git
+[submodule "feedstocks/hepmc-feedstock"]
+	path = feedstocks/hepmc-feedstock
+	url = git@github.com:hep-forge/hepmc-feedstock.git
+[submodule "feedstocks/professor-feedstock"]
+	path = feedstocks/professor-feedstock
+	url = git@github.com:hep-forge/professor-feedstock.git
+[submodule "feedstocks/rivet-feedstock"]
+	path = feedstocks/rivet-feedstock
+	url = git@github.com:hep-forge/rivet-feedstock.git
+[submodule "feedstocks/yoda-feedstock"]
+	path = feedstocks/yoda-feedstock
+	url = git@github.com:hep-forge/yoda-feedstock.git
+[submodule "feedstocks/root-plus-feedstock"]
+	path = feedstocks/root-plus-feedstock
+	url = https://github.com/hep-forge/root-plus-feedstock
