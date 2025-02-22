@@ -54,9 +54,9 @@
 [submodule "feedstocks/root-feedstock"]
 	path = feedstocks/root-feedstock
 	url = https://github.com/hep-forge/root-feedstock.git
-[submodule "feedstocks/fastjet-feedstock"]
-        path = feedstocks/fastjet-feedstock
-        url = https://github.com/hep-forge/fastjet-feedstock.git
+[submodule "feedstocks/root-plus-feedstock"]
+	path = feedstocks/root-plus-feedstock
+	url = git@github.com:hep-forge/root-plus-feedstock.git
 [submodule "feedstocks/hathor-feedstock"]
         path = feedstocks/hathor-feedstock
         url = https://github.com/hep-forge/hathor-feedstock.git
@@ -87,9 +87,6 @@
 [submodule "feedstocks/difftop-feedstock"]
 	path = feedstocks/difftop-feedstock
 	url = git@github.com:hep-forge/difftop-feedstock.git
-[submodule "feedstocks/root-plus-feedstock"]
-	path = feedstocks/root-plus-feedstock
-	url = git@github.com:hep-forge/root-plus-feedstock.git
 [submodule "feedstocks/fastjet-contrib-feedstock"]
 	path = feedstocks/fastjet-contrib-feedstock
 	url = git@github.com:hep-forge/fastjet-contrib-feedstock.git
@@ -111,6 +108,24 @@
 [submodule "feedstocks/yoda-feedstock"]
 	path = feedstocks/yoda-feedstock
 	url = git@github.com:hep-forge/yoda-feedstock.git
-[submodule "feedstocks/root-plus-feedstock"]
-	path = feedstocks/root-plus-feedstock
-	url = https://github.com/hep-forge/root-plus-feedstock
+[submodule "feedstocks/cparser-feedstock"]
+	path = feedstocks/cparser-feedstock
+	url = git@github.com:hep-forge/cparser-feedstock.git
+[submodule "feedstocks/escalade-feedstock"]
+	path = feedstocks/escalade-feedstock
+	url = git@github.com:hep-forge/escalade-feedstock.git
+[submodule "feedstocks/e2"]
+	path = feedstocks/e2
+	url = git@github.com:hep-forge/frameformat-feedstock.git
+[submodule "feedstocks/frameformat-feedstock"]
+	path = feedstocks/frameformat-feedstock
+	url = git@github.com:hep-forge/frameformat-feedstock.git
+[submodule "feedstocks/framel-feedstock"]
+	path = feedstocks/framel-feedstock
+	url = git@github.com:hep-forge/framel-feedstock.git
+[submodule "feedstocks/rh5-feedstock"]
+	path = feedstocks/rh5-feedstock
+	url = git@github.com:hep-forge/rh5-feedstock.git
+[submodule "feedstocks/rkafka-feedstock"]
+	path = feedstocks/rkafka-feedstock
+	url = git@github.com:hep-forge/rkafka-feedstock.git
