@@ -129,3 +129,6 @@
 [submodule "feedstocks/rkafka-feedstock"]
 	path = feedstocks/rkafka-feedstock
 	url = git@github.com:hep-forge/rkafka-feedstock.git
+[submodule "feedstocks/minio-cpp-feedstock"]
+	path = feedstocks/minio-cpp-feedstock
+	url = git@github.com:hep-forge/minio-cpp-feedstock.git
