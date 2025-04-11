@@ -132,3 +132,12 @@
 [submodule "feedstocks/minio-cpp-feedstock"]
 	path = feedstocks/minio-cpp-feedstock
 	url = git@github.com:hep-forge/minio-cpp-feedstock.git
+[submodule "feedstocks/curlpp-feedstock.git"]
+	path = feedstocks/curlpp-feedstock.git
+	url = git@github.com:hep-forge/curlpp-feedstock.git
+[submodule "feedstocks/inih-feedstock.git"]
+	path = feedstocks/inih-feedstock.git
+	url = git@github.com:hep-forge/inih-feedstock.git
+[submodule "feedstocks/feedstocks/inih-feedstock.git"]
+	path = feedstocks/feedstocks/inih-feedstock.git
+	url = git@github.com:hep-forge/inih-feedstock.git
