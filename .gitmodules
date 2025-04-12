@@ -138,3 +138,9 @@
 [submodule "feedstocks/xfitter-dev-feedstock"]
 	path = feedstocks/xfitter-dev-feedstock
 	url = git@github.com:hep-forge/xfitter-dev-feedstock.git
+[submodule "feedstocks/libdate-tz-feedstock"]
+	path = feedstocks/libdate-tz-feedstock
+	url = git@github.com:hep-forge/libdate-tz-feedstock.git
+[submodule "feedstocks/rsignal-feedstock"]
+	path = feedstocks/rsignal-feedstock
+	url = git@github.com:hep-forge/rsignal-feedstock.git
