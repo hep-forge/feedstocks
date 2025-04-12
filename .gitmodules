@@ -114,9 +114,6 @@
 [submodule "feedstocks/escalade-feedstock"]
 	path = feedstocks/escalade-feedstock
 	url = git@github.com:hep-forge/escalade-feedstock.git
-[submodule "feedstocks/e2"]
-	path = feedstocks/e2
-	url = git@github.com:hep-forge/frameformat-feedstock.git
 [submodule "feedstocks/frameformat-feedstock"]
 	path = feedstocks/frameformat-feedstock
 	url = git@github.com:hep-forge/frameformat-feedstock.git
@@ -132,15 +129,12 @@
 [submodule "feedstocks/minio-cpp-feedstock"]
 	path = feedstocks/minio-cpp-feedstock
 	url = git@github.com:hep-forge/minio-cpp-feedstock.git
-[submodule "feedstocks/curlpp-feedstock.git"]
-	path = feedstocks/curlpp-feedstock.git
+[submodule "feedstocks/curlpp-feedstock"]
+	path = feedstocks/curlpp-feedstock
 	url = git@github.com:hep-forge/curlpp-feedstock.git
-[submodule "feedstocks/inih-feedstock.git"]
-	path = feedstocks/inih-feedstock.git
+[submodule "feedstocks/inih-feedstock"]
+	path = feedstocks/inih-feedstock
 	url = git@github.com:hep-forge/inih-feedstock.git
-[submodule "feedstocks/inih-feedstock.git"]
-	path = feedstocks/inih-feedstock.git
-	url = git@github.com:hep-forge/inih-feedstock.git
-[submodule "feedstocks/xfitter-dev-feedstock.git"]
-	path = feedstocks/xfitter-dev-feedstock.git
+[submodule "feedstocks/xfitter-dev-feedstock"]
+	path = feedstocks/xfitter-dev-feedstock
 	url = git@github.com:hep-forge/xfitter-dev-feedstock.git
