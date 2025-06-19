@@ -1,3 +1,18 @@
+[submodule "feedstocks/lhapdf5-feedstock"]
+        path = feedstocks/lhapdf5-feedstock
+        url = git@github.com:hep-forge/lhapdf5-feedstock.git
+[submodule "feedstocks/djangoh-feedstock"]
+        path = feedstocks/djangoh-feedstock
+        url = git@github.com:hep-forge/djangoh-feedstock.git
+[submodule "feedstocks/kfrlib-feedstock"]
+        path = feedstocks/kfrlib-feedstock
+        url = git@github.com:hep-forge/kfrlib-feedstock.git
+[submodule "feedstocks/nnlojet-feedstock"]
+        path = feedstocks/nnlojet-feedstock
+        url = git@github.com:hep-forge/nnlojet-feedstock.git
+[submodule "feedstocks/rapgap-feedstock"]
+        path = feedstocks/rapgap-feedstock
+        url = git@github.com:hep-forge/rapgap-feedstock.git
 
 [submodule "feedstocks/cernlib-feedstock"]
 	path = feedstocks/cernlib-feedstock
