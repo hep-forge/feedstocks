@@ -1,6 +1,9 @@
 #! /usr/bin/bash
 
-./configure --prefix=${PREFIX}
+mkdir build
+cd build
+
+cmake .. -DCMAKE_INSTALL_PREFIX=${PREFIX}
 
 make -j$(nproc)
 make install
