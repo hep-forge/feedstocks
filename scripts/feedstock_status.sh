@@ -15,10 +15,25 @@ ORG="hep-forge"
 
 cd "$(dirname "$0")/.."
 
+# ANSI colors (disabled when not a terminal)
+if [ -t 1 ]; then
+  BOLD="\033[1m"
+  DIM="\033[2m"
+  RED="\033[31m"
+  GREEN="\033[32m"
+  YELLOW="\033[33m"
+  CYAN="\033[36m"
+  RESET="\033[0m"
+else
+  BOLD="" DIM="" RED="" GREEN="" YELLOW="" CYAN="" RESET=""
+fi
+
 # Header
-printf "%-35s  %-6s  %-20s  %-12s  %-12s  %s\n" \
+printf "${BOLD}${CYAN}%-35s  %-6s  %-20s  %-12s  %-12s  %s${RESET}\n" \
   "FEEDSTOCK" "NTAGS" "LATEST TAG" "AMD64 BUILD" "ARM64 BUILD" "BRANCHES"
-printf '%0.s-' {1..115}; echo
+printf "${DIM}"
+printf '%0.s-' {1..115}
+printf "${RESET}\n"
 
 for dir in feedstocks/*-feedstock; do
   [ -e "$dir/.git" ] || continue
@@ -56,6 +71,12 @@ for dir in feedstocks/*-feedstock; do
     | sed 's|^origin/||' | grep -v '^HEAD' | sort -u | tr '\n' ' ' | sed 's/ $//')
   [ -z "$branches" ] && branches="main"
 
-  printf "%-35s  %-6s  %-20s  %-12s  %-12s  %s\n" \
+  # Color each field based on value
+  [ "$ntags"      = "0" ]     && c_ntags="${YELLOW}"   || c_ntags="${GREEN}"
+  [ "$latest_tag" = "(none)" ] && c_tag="${YELLOW}"    || c_tag="${RESET}"
+  [ "$last_amd64" = "never" ]  && c_amd64="${RED}"     || c_amd64="${GREEN}"
+  [ "$last_arm64" = "never" ]  && c_arm64="${RED}"     || c_arm64="${GREEN}"
+
+  printf "%-35s  ${c_ntags}%-6s${RESET}  ${c_tag}%-20s${RESET}  ${c_amd64}%-12s${RESET}  ${c_arm64}%-12s${RESET}  ${CYAN}%s${RESET}\n" \
     "$repo" "$ntags" "$latest_tag" "$last_amd64" "$last_arm64" "$branches"
 done
