@@ -21,6 +21,11 @@ source:
     - patches/algorithm.patch
     {% endif %}
 
+
+build:
+  run_exports:
+    - {{ pin_subpackage(name, max_pin="x.x.x") }}
+
 requirements:
   build:
     - {{ compiler('gfortran') }}   # GNU Fortran compiler

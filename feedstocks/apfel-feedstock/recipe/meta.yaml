@@ -18,6 +18,11 @@ source:
   sha256: {{ versions.get(version) }}
   {% endif %}
 
+
+build:
+  run_exports:
+    - {{ pin_subpackage(name, max_pin="x.x.x") }}
+
 requirements:
   build:
     - {{ compiler('gfortran') }}   # GNU Fortran compiler

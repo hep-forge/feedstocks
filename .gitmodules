@@ -159,3 +159,12 @@
 [submodule "feedstocks/rsignal-feedstock"]
 	path = feedstocks/rsignal-feedstock
 	url = git@github.com:hep-forge/rsignal-feedstock.git
+[submodule "feedstocks/edm4hep-feedstock"]
+	path = feedstocks/edm4hep-feedstock
+	url = git@github.com:hep-forge/edm4hep-feedstock.git
+[submodule "feedstocks/jana-feedstock"]
+	path = feedstocks/jana-feedstock
+	url = git@github.com:hep-forge/jana-feedstock.git
+[submodule "feedstocks/podio-feedstock"]
+	path = feedstocks/podio-feedstock
+	url = git@github.com:hep-forge/podio-feedstock.git
