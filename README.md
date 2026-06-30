@@ -159,44 +159,119 @@ Set `dry_run: true` on the rebuild workflow to preview the DAG order without tri
 
 ## Self-hosted runners
 
-ARM64 builds for heavy packages (especially ROOT) should run on self-hosted lab machines to avoid GitHub's 6-hour job timeout and benefit from a persistent package cache.
+Self-hosted runners let you use your own lab machines for builds instead of GitHub's cloud VMs.
+Benefits: no 6-hour timeout, persistent conda package cache (much faster rebuilds), no billing for compute.
 
-### Register a lab machine
+By default all workflows use GitHub-hosted runners (`ubuntu-24.04` / `ubuntu-24.04-arm`). You only need to switch `runs-on:` in the individual feedstock workflow if you want a specific build to run on your machine — everything else keeps using GitHub's VMs automatically.
+
+### Step 1 — Get a runner registration token
+
+**Option A — Org-level runner (recommended, one runner serves all feedstocks):**
+
+Go to: **github.com/hep-forge → Settings → Actions → Runners → New self-hosted runner**
+
+**Option B — Repo-level runner (simpler, one runner per feedstock repo):**
+
+Go to: **github.com/hep-forge/\<feedstock\> → Settings → Actions → Runners → New self-hosted runner**
+
+On that page, GitHub shows you:
+- The download URL for the runner package
+- A one-time registration token (valid 1 hour)
+- Copy the exact `config.sh` line shown — it already contains your token
+
+### Step 2 — Install the runner on the machine
+
+Run this on your lab machine. Replace `<ARCH>`, `<URL>`, and `<TOKEN>` with the values from the GitHub page above.
+
+**AMD64 machine:**
 
 ```bash
-# On the lab machine (repeat for each machine)
 mkdir ~/actions-runner && cd ~/actions-runner
-curl -o runner.tar.gz -L <DOWNLOAD_URL_FROM_GITHUB_UI>
+curl -o runner.tar.gz -L <URL_FROM_GITHUB>
 tar xzf runner.tar.gz
 
 ./config.sh \
   --url https://github.com/hep-forge \
-  --token <REGISTRATION_TOKEN_FROM_GITHUB_UI> \
-  --labels hep-forge-arm64 \       # or hep-forge-amd64
-  --name hep-forge-arm64-lab \
+  --token <TOKEN_FROM_GITHUB> \
+  --name hep-forge-amd64-lab \
+  --labels hep-forge-amd64 \
   --unattended
 
-sudo ./svc.sh install && sudo ./svc.sh start
+sudo ./svc.sh install
+sudo ./svc.sh start
 ```
 
-Get the download URL and token from:
-**`github.com/hep-forge` → Settings → Actions → Runners → New self-hosted runner**
-
-### Pre-install conda on the runner (one-time, speeds up every build)
+**ARM64 machine** (same steps, different label):
 
 ```bash
-# ARM64 machine
-wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh
-bash Miniforge3-Linux-aarch64.sh -b -p ~/miniforge3
-~/miniforge3/bin/conda install -n base -c conda-forge -y \
+mkdir ~/actions-runner && cd ~/actions-runner
+curl -o runner.tar.gz -L <URL_FROM_GITHUB>
+tar xzf runner.tar.gz
+
+./config.sh \
+  --url https://github.com/hep-forge \
+  --token <TOKEN_FROM_GITHUB> \
+  --name hep-forge-arm64-lab \
+  --labels hep-forge-arm64 \
+  --unattended
+
+sudo ./svc.sh install
+sudo ./svc.sh start
+```
+
+After `svc.sh start`, the runner appears as **Online** in the GitHub UI. The service restarts automatically on reboot.
+
+### Step 3 — Pre-install conda (one-time, speeds up every build)
+
+```bash
+# On the AMD64 machine
+wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh -b -p ~/miniconda3
+~/miniconda3/bin/conda install -n base -c conda-forge -y \
   conda-build anaconda-client conda-smithy conda-package-handling
 ```
 
-To route a feedstock's ARM64 build to the lab runner instead of `ubuntu-24.04-arm`, change the `runs-on:` line in `.github/workflows/autoupload.arm64.yml`:
+```bash
+# On the ARM64 machine
+wget -q https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh
+bash Miniforge3-Linux-aarch64.sh -b -p ~/miniconda3
+~/miniconda3/bin/conda install -n base -c conda-forge -y \
+  conda-build anaconda-client conda-smithy conda-package-handling
+```
+
+### Step 4 — Route a feedstock to your runner
+
+The workflows use GitHub-hosted runners by default. To switch a specific feedstock to your machine, edit the `runs-on:` line in its `.github/workflows/autoupload.amd64.yml`:
 
 ```yaml
+# Before (GitHub-hosted):
+runs-on: ubuntu-24.04
+
+# After (your AMD64 lab machine):
+runs-on: [self-hosted, linux, X64, hep-forge-amd64]
+```
+
+And in `autoupload.arm64.yml`:
+
+```yaml
+# Before:
+runs-on: ubuntu-24.04-arm
+
+# After (your ARM64 lab machine):
 runs-on: [self-hosted, linux, ARM64, hep-forge-arm64]
 ```
+
+For ROOT specifically, always prefer the self-hosted ARM64 runner — ROOT's build takes 4–6 hours and GitHub's hosted ARM runners have a strict 6-hour timeout.
+
+### Check runner status
+
+```bash
+# On the lab machine
+cd ~/actions-runner
+sudo ./svc.sh status
+```
+
+Or check online at: **github.com/hep-forge → Settings → Actions → Runners**
 
 ## Analysis replay
 
