@@ -87,14 +87,12 @@ else
 	@bash scripts/feedstock_status.sh
 endif
 
-# Trigger a rebuild for all feedstocks at their latest tag
-# (one tag = one package version; one branch = one conda label)
+# Trigger a rebuild at the latest tag — FEEDSTOCK= is required to prevent flooding runners
 rerun:
-ifdef FEEDSTOCK
-	@bash scripts/rerun_tags.sh $(FEEDSTOCK)
-else
-	@bash scripts/rerun_tags.sh
+ifndef FEEDSTOCK
+	$(error Usage: make rerun FEEDSTOCK=<feedstock-name>   (e.g. make rerun FEEDSTOCK=fastjet-feedstock))
 endif
+	@bash scripts/rerun_tags.sh $(FEEDSTOCK)
 
 # Copy this Makefile into every feedstock directory
 distribute:
