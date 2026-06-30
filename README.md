@@ -220,13 +220,109 @@ Reference `.yoda` outputs are stored in `analyses/reference/`. The first run sto
 
 ## Adding a new feedstock
 
-1. Copy `examples/helloworld-feedstock/` as a starting point
-2. Write `recipe/meta.yaml` — include `build.run_exports` if the package installs shared libraries
-3. Add `c_stdlib_version: 2.17` to `recipe/conda_build_config.yaml` if the package compiles C/C++ code
-4. The `conda-forge.yml` and workflow files are already correct (copied from the template); update `github.user_or_org: hep-forge`
-5. Add the feedstock as a git submodule: `git submodule add git@github.com:hep-forge/<pkg>-feedstock feedstocks/<pkg>-feedstock`
-6. Add entries to `scripts/hep_bot/sources.yaml` and `scripts/hep_bot/dag.yaml`
-7. Run `make readme` to generate the feedstock's README
+### Step 1 — Create the repository on GitHub
+
+Go to [github.com/hep-forge](https://github.com/hep-forge) → **New repository**.
+
+Name it `<pkg>-feedstock` (e.g. `mypackage-feedstock`). Leave it empty (no README, no license) and click **Create repository**.
+
+### Step 2 — Copy the template locally
+
+```bash
+cp -r examples/helloworld-feedstock feedstocks/mypackage-feedstock
+cd feedstocks/mypackage-feedstock
+git init
+git remote add origin git@github.com:hep-forge/mypackage-feedstock.git
+```
+
+Everything in the template is already configured for hep-forge: channels, org name, workflow trigger, dev-build guard, Makefile. You do not need to edit any of those files.
+
+### Step 3 — Write the recipe
+
+Edit `recipe/meta.yaml`. The key fields to fill in:
+
+```yaml
+{% set name = "mypackage" %}
+{% set version = "1.2.3" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://example.com/mypackage-{{ version }}.tar.gz
+  sha256: <sha256 of the tarball>
+
+build:
+  number: 0
+  # Add this block if the package installs .so shared libraries:
+  run_exports:
+    - {{ pin_subpackage(name, max_pin="x.x.x") }}
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}   # include if the package compiles C/C++
+  host:
+    - <dependencies>
+  run:
+    - <dependencies>
+
+about:
+  home: https://example.com/mypackage
+  summary: One-line description
+  license: GPL-2.0
+
+extra:
+  recipe-maintainers:
+    - meiyasan
+```
+
+If the package compiles C/C++ code, `recipe/conda_build_config.yaml` already contains the glibc 2.17 floor — no changes needed there either.
+
+### Step 4 — Generate the README and push
+
+```bash
+cd ../..                                  # back to hep-feedstocks root
+make readme                               # generates feedstocks/mypackage-feedstock/README.md
+cd feedstocks/mypackage-feedstock
+git add -A
+git commit -m "initial recipe for mypackage 1.2.3"
+git push -u origin main
+```
+
+### Step 5 — Register as a submodule in this meta-repo
+
+```bash
+cd ../..                                  # back to hep-feedstocks root
+git submodule add git@github.com:hep-forge/mypackage-feedstock.git feedstocks/mypackage-feedstock
+git add .gitmodules feedstocks/mypackage-feedstock
+git commit -m "add mypackage-feedstock submodule"
+git push origin main
+```
+
+### Step 6 — Add to hep-bot (optional)
+
+Add an entry to [`scripts/hep_bot/sources.yaml`](scripts/hep_bot/sources.yaml) so the weekly version checker monitors it:
+
+```yaml
+mypackage:
+  type: html_scrape
+  url: "https://example.com/mypackage/downloads/"
+  pattern: 'mypackage-(\d+\.\d+\.\d+)\.tar\.gz'
+```
+
+Add an entry to [`scripts/hep_bot/dag.yaml`](scripts/hep_bot/dag.yaml) with its dependencies:
+
+```yaml
+mypackage:
+  depends_on: [fastjet, lhapdf]   # or [] if no HEP dependencies
+```
+
+### Step 7 — Trigger the first build
+
+In the feedstock repo on GitHub: **Actions → Anaconda Build & Upload (AMD64) → Run workflow**.
+
+The package will appear at `https://anaconda.org/hep-forge/mypackage` once the build succeeds.
 
 ## License
 
