@@ -1,0 +1,90 @@
+name: hep-bot ordered rebuild
+
+on:
+  workflow_dispatch:
+    inputs:
+      root_package:
+        description: 'Rebuild from this package and all its dependents (e.g. fastjet)'
+        required: true
+        default: 'fastjet'
+      dry_run:
+        description: 'Print rebuild order without triggering builds'
+        required: false
+        default: 'false'
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.HEP_BOT_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Compute rebuild order and trigger builds
+        env:
+          GH_TOKEN: ${{ secrets.HEP_BOT_TOKEN }}
+          ROOT_PACKAGE: ${{ inputs.root_package }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          python3 - <<'PYEOF'
+          import os, subprocess, sys, yaml
+          from pathlib import Path
+
+          dag = yaml.safe_load(Path("scripts/hep_bot/dag.yaml").read_text())
+          root_pkg = os.environ["ROOT_PACKAGE"]
+          dry_run = os.environ["DRY_RUN"].lower() == "true"
+
+          # Topological sort of packages that depend (directly or transitively) on root_pkg
+          def dependents(pkg, dag):
+              result = []
+              for name, info in dag.items():
+                  if pkg in info.get("depends_on", []):
+                      result.append(name)
+              return result
+
+          def topo_order(start, dag):
+              visited, order = set(), []
+              def dfs(node):
+                  if node in visited: return
+                  visited.add(node)
+                  for dep in dag.get(node, {}).get("depends_on", []):
+                      dfs(dep)
+                  order.append(node)
+              dfs(start)
+              # Also include packages that depend ON start
+              for pkg in list(dag.keys()):
+                  if start in dag.get(pkg, {}).get("depends_on", []):
+                      dfs(pkg)
+              return order
+
+          rebuild_order = topo_order(root_pkg, dag)
+          print(f"Rebuild order starting from '{root_pkg}':")
+          for i, pkg in enumerate(rebuild_order, 1):
+              print(f"  {i}. {pkg}")
+
+          if dry_run:
+              print("Dry-run mode: no builds triggered.")
+              sys.exit(0)
+
+          # Trigger each feedstock's amd64+arm64 builds in order
+          for pkg in rebuild_order:
+              feedstock_repo = f"hep-forge/{pkg}-feedstock"
+              print(f"\nTriggering build for {feedstock_repo}...")
+              for arch in ["autoupload.amd64.yml", "autoupload.arm64.yml"]:
+                  result = subprocess.run(
+                      ["gh", "workflow", "run", arch, "--repo", feedstock_repo],
+                      capture_output=True, text=True
+                  )
+                  if result.returncode != 0:
+                      print(f"  WARNING: failed to trigger {arch} for {feedstock_repo}: {result.stderr}")
+                  else:
+                      print(f"  Triggered {arch}")
+          PYEOF

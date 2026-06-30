@@ -1,0 +1,74 @@
+# Dependency graph for hep-forge feedstocks.
+# auto_update: false means hep-bot never bumps this package automatically.
+
+root:
+  depends_on: []
+  auto_update: false    # manually versioned; root-guard handles channel isolation
+
+root-guard:
+  depends_on: [root]
+  auto_update: false
+
+fastjet:
+  depends_on: []
+
+fastjet-contrib:
+  depends_on: [fastjet]
+
+hepmc:
+  depends_on: []
+
+lhapdf:
+  depends_on: []
+
+yoda:
+  depends_on: [root, root-guard]
+
+hoppet:
+  depends_on: [lhapdf]
+
+applgrid:
+  depends_on: [lhapdf, fastjet]
+
+apfel:
+  depends_on: [lhapdf]
+
+apfelxx:
+  depends_on: [lhapdf]
+
+apfelgrid:
+  depends_on: [apfel, lhapdf, applgrid]
+
+qcdnum:
+  depends_on: []
+
+qcdloop:
+  depends_on: []
+
+chaplin:
+  depends_on: []
+
+pineappl:
+  depends_on: []
+
+pythia:
+  depends_on: [lhapdf, hepmc]
+
+rivet:
+  depends_on: [fastjet, fastjet-contrib, hepmc, yoda, root, root-guard]
+
+fastnlo:
+  depends_on: [lhapdf, hoppet, fastjet, qcdnum, yoda, root, root-guard]
+
+rapgap:
+  depends_on: [rivet, lhapdf, pythia, hepmc]
+
+xfitter:
+  depends_on: [root, root-guard, lhapdf, applgrid, apfelgrid, apfel, apfelxx,
+               pineappl, qcdnum, hoppet]
+
+xfitter-dev:
+  depends_on: [xfitter]
+
+nnpdf:
+  depends_on: [lhapdf, pineappl]

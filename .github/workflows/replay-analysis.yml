@@ -1,0 +1,51 @@
+name: analysis replay
+
+on:
+  workflow_dispatch:
+    inputs:
+      lock_file:
+        description: 'Lock file stem under analyses/locks/ (e.g. rivet-3.1.11-env)'
+        required: true
+        default: 'rivet-3.1.11-env'
+      analysis:
+        description: 'Rivet analysis ID'
+        required: true
+        default: 'ATLAS_2012_I1189423'
+      events_path:
+        description: 'Path to .hepmc events file on the runner'
+        required: false
+        default: 'analyses/events/test.hepmc'
+
+jobs:
+  replay:
+    runs-on: [self-hosted, linux, X64, hep-forge-amd64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create conda env from lock file
+        run: |
+          conda-lock install -n hep-replay analyses/locks/${{ inputs.lock_file }}.lock.yml
+
+      - name: Run Rivet analysis
+        run: |
+          conda run -n hep-replay \
+            rivet --analysis=${{ inputs.analysis }} \
+            --hepmc "${{ inputs.events_path }}" \
+            -o output_${{ inputs.analysis }}.yoda
+
+      - name: Compare with stored reference
+        run: |
+          REF="analyses/reference/${{ inputs.analysis }}.yoda"
+          if [ -f "$REF" ]; then
+            conda run -n hep-replay \
+              rivet-cmp-histo output_${{ inputs.analysis }}.yoda "$REF" || true
+          else
+            echo "No reference stored yet — output will be saved as artifact."
+          fi
+
+      - name: Upload output yoda
+        uses: actions/upload-artifact@v4
+        with:
+          name: replay-${{ inputs.analysis }}
+          path: output_${{ inputs.analysis }}.yoda
+          retention-days: 30

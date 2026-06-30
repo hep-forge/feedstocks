@@ -1,0 +1,14 @@
+name: hep-forge-analysis
+channels:
+  - hep-forge
+  - conda-forge
+dependencies:
+  - rivet
+  - pythia
+  - lhapdf
+  - hepmc
+  - yoda
+  - root
+  - root-guard
+  - python=3.12
+  - conda-lock

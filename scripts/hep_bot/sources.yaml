@@ -1,0 +1,49 @@
+fastjet:
+  type: html_scrape
+  url: "https://fastjet.fr/repo/"
+  pattern: 'fastjet-(\d+\.\d+\.\d+)\.tar\.gz'
+
+fastjet-contrib:
+  type: html_scrape
+  url: "http://fastjet.hepforge.org/contrib/downloads/"
+  pattern: 'fjcontrib-(\d+\.\d+)\.tar\.gz'
+
+rivet:
+  type: html_scrape
+  url: "https://rivet.hepforge.org/downloads/"
+  pattern: 'Rivet-(\d+\.\d+\.\d+)\.tar\.gz'
+
+lhapdf:
+  type: html_scrape
+  url: "https://lhapdf.hepforge.org/downloads/"
+  pattern: 'LHAPDF-(\d+\.\d+\.\d+)\.tar\.gz'
+
+hepmc:
+  type: gitlab_tags
+  url: "https://gitlab.cern.ch/hepmc/HepMC3"
+  pattern: '(\d+\.\d+\.\d+)'
+
+pythia:
+  type: html_scrape
+  url: "https://pythia.org/download/pythia83/"
+  pattern: 'pythia(\d+)\.tgz'
+
+yoda:
+  type: html_scrape
+  url: "https://yoda.hepforge.org/downloads/"
+  pattern: 'YODA-(\d+\.\d+\.\d+)\.tar\.gz'
+
+hoppet:
+  type: html_scrape
+  url: "https://hoppet.hepforge.org/downloads/"
+  pattern: 'hoppet-(\d+\.\d+\.\d+)\.tar\.gz'
+
+rapgap:
+  type: html_scrape
+  url: "https://rapgap.hepforge.org/downloads/"
+  pattern: 'rapgap-(\d+\.\d+\.\d+)\.tar\.gz'
+
+applgrid:
+  type: html_scrape
+  url: "https://applgrid.hepforge.org/downloads/"
+  pattern: 'applgrid-(\d+\.\d+\.\d+)\.tar\.gz'
