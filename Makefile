@@ -30,7 +30,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render readme list anaconda bot-check distribute debug
+.PHONY: all forge render readme list anaconda bot-check distribute debug status rerun
 
 all: forge render readme
 
@@ -78,6 +78,23 @@ anaconda:
 
 bot-check:
 	@python3 scripts/hep_bot/check_versions.py --dry-run
+
+# Show feedstock status: tags, branches (= conda labels), last AMD64 build
+status:
+ifdef FEEDSTOCK
+	@bash scripts/feedstock_status.sh $(FEEDSTOCK)
+else
+	@bash scripts/feedstock_status.sh
+endif
+
+# Trigger a rebuild for all feedstocks at their latest tag
+# (one tag = one package version; one branch = one conda label)
+rerun:
+ifdef FEEDSTOCK
+	@bash scripts/rerun_tags.sh $(FEEDSTOCK)
+else
+	@bash scripts/rerun_tags.sh
+endif
 
 # Copy this Makefile into every feedstock directory
 distribute:

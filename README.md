@@ -87,6 +87,10 @@ make readme       # Regenerate all README.md files pointed at hep-forge
 make list         # List all locally built .conda packages
 make anaconda     # Upload all built packages to the hep-forge channel
 make bot-check    # Dry-run upstream version check (hep-bot)
+make status       # Table: feedstock | tags | branches (=labels) | last build date
+make status FEEDSTOCK=rivet-feedstock    # Status for one feedstock
+make rerun        # Trigger a rebuild of every feedstock at its latest tag
+make rerun FEEDSTOCK=fastjet-feedstock   # Trigger one feedstock
 make distribute   # Copy this Makefile into every feedstock
 make debug FEEDSTOCK=fastjet-feedstock   # Debug one feedstock build
 ```

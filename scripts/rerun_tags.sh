@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # Trigger autoupload.amd64.yml and autoupload.arm64.yml for every feedstock
-# that has a version-like tag (starting with a digit).
+# that has at least one git tag (the tag is the package version).
+#
+# One tag  = one software release (uploaded to Anaconda with that version number)
+# One branch = one Anaconda label (e.g. pythia main/6.x/8.x → labels main/6/8)
 #
 # Usage:
-#   bash scripts/rerun_tags.sh           # trigger all feedstocks
-#   bash scripts/rerun_tags.sh fastjet   # trigger one feedstock by name
-#   bash scripts/rerun_tags.sh --dry-run # print what would run, don't trigger
+#   bash scripts/rerun_tags.sh                # trigger all feedstocks
+#   bash scripts/rerun_tags.sh fastjet        # trigger one feedstock
+#   bash scripts/rerun_tags.sh --dry-run      # print without triggering
+#   bash scripts/rerun_tags.sh --amd64-only   # skip ARM64 jobs
 #
 # Requirements: gh CLI authenticated as a hep-forge org member
 
@@ -13,24 +17,27 @@ set -euo pipefail
 
 DRY_RUN=0
 FILTER=""
+AMD64_ONLY=0
 ORG="hep-forge"
-DELAY=4   # seconds between API calls (avoid rate-limiting)
+DELAY=3   # seconds between API calls (avoid rate-limiting)
 
 for arg in "$@"; do
   case "$arg" in
-    --dry-run) DRY_RUN=1 ;;
-    --*) echo "Unknown flag: $arg"; exit 1 ;;
-    *) FILTER="$arg" ;;
+    --dry-run)    DRY_RUN=1 ;;
+    --amd64-only) AMD64_ONLY=1 ;;
+    --*)          echo "Unknown flag: $arg"; exit 1 ;;
+    *)            FILTER="$arg" ;;
   esac
 done
 
 trigger() {
-  local repo="$1" tag="$2" workflow="$3"
+  local repo="$1" ref="$2" workflow="$3"
   if [ "$DRY_RUN" -eq 1 ]; then
-    echo "  [dry-run] gh workflow run $workflow --repo $ORG/$repo --ref $tag"
+    printf "  [dry-run] gh workflow run %-30s --repo %s/%s --ref %s\n" \
+      "$workflow" "$ORG" "$repo" "$ref"
   else
-    echo "  → triggering $workflow on $repo @ $tag"
-    gh workflow run "$workflow" --repo "$ORG/$repo" --ref "$tag" 2>&1 \
+    printf "  → %-30s @ %s\n" "$workflow" "$ref"
+    gh workflow run "$workflow" --repo "$ORG/$repo" --ref "$ref" 2>&1 \
       || echo "  WARNING: failed to trigger $workflow for $repo"
     sleep "$DELAY"
   fi
@@ -47,37 +54,26 @@ for dir in feedstocks/*-feedstock; do
   repo=$(basename "$dir")
   pkg="${repo%-feedstock}"
 
-  # If a filter is given, skip non-matching feedstocks
   if [ -n "$FILTER" ] && [ "$pkg" != "$FILTER" ] && [ "$repo" != "$FILTER" ]; then
     continue
   fi
 
-  # Find the latest tag
-  tag=$(git -C "$dir" describe --tags --abbrev=0 2>/dev/null || echo "")
+  # Find the latest tag (searches ALL tags, not just ancestors of HEAD)
+  tag=$(git -C "$dir" tag --sort=-v:refname 2>/dev/null | head -1)
 
   if [ -z "$tag" ]; then
-    echo "SKIP $repo — no tags"
+    printf "SKIP %-40s no tags\n" "$repo"
     SKIPPED=$((SKIPPED+1))
     continue
   fi
 
-  # Only version-like tags (starting with a digit) trigger proper version builds.
-  # Tags like "master", "alpha", "v1.2.3" need manual intervention.
-  if [[ ! "$tag" =~ ^[0-9] ]]; then
-    echo "SKIP $repo — tag '$tag' does not start with a digit (not a version tag)"
-    SKIPPED=$((SKIPPED+1))
-    continue
-  fi
-
-  echo "$repo @ $tag"
+  printf "%-40s tag=%s\n" "$repo" "$tag"
   trigger "$repo" "$tag" "autoupload.amd64.yml"
-  trigger "$repo" "$tag" "autoupload.arm64.yml"
+  [ "$AMD64_ONLY" -eq 0 ] && trigger "$repo" "$tag" "autoupload.arm64.yml"
   TRIGGERED=$((TRIGGERED+1))
 done
 
 echo ""
 echo "Triggered: $TRIGGERED feedstocks"
-echo "Skipped:   $SKIPPED feedstocks"
-if [ "$DRY_RUN" -eq 1 ]; then
-  echo "(dry-run — nothing was actually triggered)"
-fi
+echo "Skipped:   $SKIPPED feedstocks (no tags)"
+[ "$DRY_RUN" -eq 1 ] && echo "(dry-run — nothing was actually triggered)"
