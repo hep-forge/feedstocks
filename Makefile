@@ -79,7 +79,7 @@ anaconda:
 bot-check:
 	@python3 scripts/hep_bot/check_versions.py --dry-run
 
-# Show feedstock status: tags, branches (= conda labels), last AMD64 build
+# Show feedstock status: tags, last AMD64/ARM64 build dates, branches (= conda labels)
 status:
 ifdef FEEDSTOCK
 	@bash scripts/feedstock_status.sh $(FEEDSTOCK)

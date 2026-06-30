@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Print a status table for all feedstocks:
-#   Name | Tags (count + latest) | Branches | Last amd64 build
+#   Name | Tags | Latest tag | Last AMD64 build | Last ARM64 build | Branches
 #
 # Usage:
 #   bash scripts/feedstock_status.sh
@@ -16,9 +16,9 @@ ORG="hep-forge"
 cd "$(dirname "$0")/.."
 
 # Header
-printf "%-35s  %-6s  %-20s  %-30s  %s\n" \
-  "FEEDSTOCK" "NTAGS" "LATEST TAG" "BRANCHES" "LAST AMD64 BUILD"
-printf '%0.s-' {1..120}; echo
+printf "%-35s  %-6s  %-20s  %-12s  %-12s  %s\n" \
+  "FEEDSTOCK" "NTAGS" "LATEST TAG" "AMD64 BUILD" "ARM64 BUILD" "BRANCHES"
+printf '%0.s-' {1..115}; echo
 
 for dir in feedstocks/*-feedstock; do
   [ -e "$dir/.git" ] || continue
@@ -36,17 +36,22 @@ for dir in feedstocks/*-feedstock; do
   latest_tag=$(echo "$all_tags" | head -1)
   [ -z "$latest_tag" ] && latest_tag="(none)"
 
-  # All local branches (exclude HEAD)
+  # Last successful run for each workflow
+  last_amd64=$(gh api "repos/$ORG/$repo/actions/workflows/autoupload.amd64.yml/runs" \
+    --jq '.workflow_runs[] | select(.conclusion=="success") | .updated_at' \
+    2>/dev/null | head -1 | cut -c1-10)
+  [ -z "$last_amd64" ] && last_amd64="never"
+
+  last_arm64=$(gh api "repos/$ORG/$repo/actions/workflows/autoupload.arm64.yml/runs" \
+    --jq '.workflow_runs[] | select(.conclusion=="success") | .updated_at' \
+    2>/dev/null | head -1 | cut -c1-10)
+  [ -z "$last_arm64" ] && last_arm64="never"
+
+  # All local branches (exclude HEAD); each branch = one Anaconda label
   branches=$(git -C "$dir" branch --format='%(refname:short)' 2>/dev/null \
     | grep -v '^HEAD' | tr '\n' ' ' | sed 's/ $//')
   [ -z "$branches" ] && branches="main"
 
-  # Last successful amd64 workflow run via GitHub API
-  last_run=$(gh api "repos/$ORG/$repo/actions/workflows/autoupload.amd64.yml/runs" \
-    --jq '.workflow_runs[] | select(.conclusion=="success") | .updated_at' \
-    2>/dev/null | head -1 | cut -c1-10 || echo "never")
-  [ -z "$last_run" ] && last_run="never"
-
-  printf "%-35s  %-6s  %-20s  %-30s  %s\n" \
-    "$repo" "$ntags" "$latest_tag" "$branches" "$last_run"
+  printf "%-35s  %-6s  %-20s  %-12s  %-12s  %s\n" \
+    "$repo" "$ntags" "$latest_tag" "$last_amd64" "$last_arm64" "$branches"
 done
