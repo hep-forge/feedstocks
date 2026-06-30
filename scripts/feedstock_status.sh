@@ -32,24 +32,28 @@ for dir in feedstocks/*-feedstock; do
 
   # All tags sorted by version descending
   all_tags=$(git -C "$dir" tag --sort=-v:refname 2>/dev/null)
-  ntags=$(echo "$all_tags" | grep -c . || echo 0)
-  latest_tag=$(echo "$all_tags" | head -1)
+  if [ -z "$all_tags" ]; then
+    ntags=0
+  else
+    ntags=$(printf '%s\n' "$all_tags" | wc -l | tr -d ' ')
+  fi
+  latest_tag=$(printf '%s\n' "$all_tags" | head -1)
   [ -z "$latest_tag" ] && latest_tag="(none)"
 
-  # Last successful run for each workflow
+  # Last successful run for each workflow (gh api failure → "never")
   last_amd64=$(gh api "repos/$ORG/$repo/actions/workflows/autoupload.amd64.yml/runs" \
     --jq '.workflow_runs[] | select(.conclusion=="success") | .updated_at' \
-    2>/dev/null | head -1 | cut -c1-10)
+    2>/dev/null | head -1 | cut -c1-10 || true)
   [ -z "$last_amd64" ] && last_amd64="never"
 
   last_arm64=$(gh api "repos/$ORG/$repo/actions/workflows/autoupload.arm64.yml/runs" \
     --jq '.workflow_runs[] | select(.conclusion=="success") | .updated_at' \
-    2>/dev/null | head -1 | cut -c1-10)
+    2>/dev/null | head -1 | cut -c1-10 || true)
   [ -z "$last_arm64" ] && last_arm64="never"
 
-  # All local branches (exclude HEAD); each branch = one Anaconda label
-  branches=$(git -C "$dir" branch --format='%(refname:short)' 2>/dev/null \
-    | grep -v '^HEAD' | tr '\n' ' ' | sed 's/ $//')
+  # Remote branches (each branch = one Anaconda label); strip origin/ prefix, exclude HEAD
+  branches=$(git -C "$dir" branch -r --format='%(refname:short)' 2>/dev/null \
+    | sed 's|^origin/||' | grep -v '^HEAD' | sort -u | tr '\n' ' ' | sed 's/ $//')
   [ -z "$branches" ] && branches="main"
 
   printf "%-35s  %-6s  %-20s  %-12s  %-12s  %s\n" \
