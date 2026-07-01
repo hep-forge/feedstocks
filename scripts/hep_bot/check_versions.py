@@ -169,6 +169,7 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Print findings without creating PRs")
     args = parser.parse_args()
 
+    failures = []
     for feedstock, info in DAG.items():
         if info.get("auto_update") is False:
             continue
@@ -187,7 +188,19 @@ def main() -> None:
         else:
             print(f"BUMP  {feedstock}: {current} → {upstream}")
             if not args.dry_run:
-                create_pr(feedstock, current, upstream)
+                try:
+                    create_pr(feedstock, current, upstream)
+                except Exception as e:
+                    print(f"ERROR {feedstock}: failed to create PR: {e}", file=sys.stderr)
+                    failures.append(feedstock)
+                    # Best-effort cleanup so the next package starts from a
+                    # clean state regardless of where create_pr() failed.
+                    subprocess.run(["git", "checkout", "main"], cwd=REPO_ROOT)
+                    subprocess.run(["git", "checkout", "--", "."], cwd=REPO_ROOT)
+
+    if failures:
+        print(f"\n{len(failures)} package(s) failed: {', '.join(failures)}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

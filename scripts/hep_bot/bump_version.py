@@ -31,16 +31,25 @@ def fetch_sha256(url: str) -> str:
 
 
 def tarball_url(feedstock: str, version: str) -> str | None:
-    """Reconstruct the tarball URL from the source pattern and meta.yaml url template."""
+    """Reconstruct the tarball URL from the source url template(s) in meta.yaml.
+
+    Recipes that support multiple major versions often have more than one
+    `url:` line gated by a jinja conditional (e.g. hepmc's HepMC-v2 vs
+    HepMC3-v3 archive naming). Rather than parse the conditional, just try
+    each candidate template and use whichever one actually resolves.
+    """
     meta_path = REPO_ROOT / "feedstocks" / f"{feedstock}-feedstock" / "recipe" / "meta.yaml"
     text = meta_path.read_text()
-    # Extract the url: line (may contain {{ version }})
-    m = re.search(r'url:\s*"?([^"\n]+)"?', text)
-    if not m:
-        return None
-    url_template = m.group(1).strip()
-    # Replace Jinja2 {{ version }} with the actual version
-    return re.sub(r'\{\{\s*version\s*\}\}', version, url_template)
+    templates = re.findall(r'url:\s*"?([^"\n]+)"?', text)
+    for url_template in templates:
+        url = re.sub(r'\{\{\s*version\s*\}\}', version, url_template.strip())
+        try:
+            r = requests.head(url, timeout=15, allow_redirects=True)
+            if r.status_code == 200:
+                return url
+        except Exception:
+            continue
+    return None
 
 
 def bump(feedstock: str, new_version: str) -> None:
