@@ -169,32 +169,84 @@ Two GitHub Actions workflows live in this meta-repo:
 
 | Workflow | Trigger | Action |
 |---|---|---|
-| `hep-bot version check` | Every Monday 06:00 UTC, or manual | Scrapes upstream release pages; opens a PR for each outdated package |
-| `hep-bot ordered rebuild` | Manual (`workflow_dispatch`) | Triggers feedstock builds in DAG order starting from a given package |
+| `hep-bot version check` | Every Monday 06:00 UTC, or manual | Scrapes upstream release pages; for each outdated package, commits the bump directly to that feedstock's own repo, then opens a PR **on this meta-repo** to bump the submodule pointer to match |
+| `hep-bot ordered rebuild` | Manual (`workflow_dispatch`) | Triggers feedstock builds in DAG order, tier by tier, waiting for each tier to finish before starting the next |
 
 ### Required secret
 
-Create a GitHub Personal Access Token with **Contents**, **Pull requests**, and **Actions** write access, then add it to this repo:
+Create a GitHub Personal Access Token (fine-grained, scoped to the `hep-forge` org or at least `feedstocks` + the individual `-feedstock` repos it needs to touch) with these permissions, then add it as a repo secret:
+
+| Permission | Level | Why |
+|---|---|---|
+| Contents | Read and write | Push commits |
+| Workflows | Read and write | Push commits that touch `.github/workflows/*.yml` |
+| Actions | Read and write | Trigger `workflow_dispatch` runs |
+| Secrets | Read and write | Only needed once, to set this very secret via `gh secret set` |
+| Pull requests | Read and write | `hep-bot version check` opens PRs for outdated packages |
+| Metadata | Read-only | Mandatory baseline for any fine-grained PAT |
 
 ```
 Settings → Secrets and variables → Actions → New repository secret
 Name:  HEP_BOT_TOKEN
 ```
 
-### Trigger manually (GitHub UI or IDE)
+If `hep-forge` is an organization, a fine-grained PAT's permissions may need **org owner approval** before they take effect — check the token's settings page for a pending-approval banner if workflows keep failing with 403s after you've set the permissions.
+
+### Trigger manually
+
+Via the GitHub UI:
 
 ```
 Actions → hep-bot version check → Run workflow
-Actions → hep-bot ordered rebuild → Run workflow → root_package: fastjet
+Actions → hep-bot ordered rebuild → Run workflow → root_package: fastjet, dry_run: true
 ```
 
-Set `dry_run: true` on the rebuild workflow to preview the DAG order without triggering actual builds.
+Or via `gh` CLI:
+
+```bash
+gh workflow run hep-bot-check.yml --repo hep-forge/feedstocks
+
+gh workflow run hep-bot-rebuild.yml --repo hep-forge/feedstocks \
+  -f root_package=fastjet -f dry_run=true
+
+# watch it
+gh run list --repo hep-forge/feedstocks --limit 5
+gh run view <run-id> --repo hep-forge/feedstocks --log
+```
+
+Always set `dry_run: true` first on the rebuild workflow to preview the tier plan before triggering actual builds — it prints something like:
+
+```
+Rebuild plan for 'fastjet' (9 package(s), 5 tier(s)):
+  Tier 1: fastjet
+  Tier 2: applgrid, fastjet-contrib, fastnlo
+  Tier 3: apfelgrid, rivet
+  Tier 4: rapgap, xfitter
+  Tier 5: xfitter-dev
+```
+
+**`hep-bot version check` has no safe dry-run** — every manual or scheduled run does the real work (commits + opens PRs) for every outdated package it finds; there's a `--dry-run` flag on the underlying script (`make bot-check` runs it locally), but the workflow itself always calls the real path. Don't trigger it on a whim.
+
+### What a real run looks like
+
+A version check found `hepmc` behind (`3.3.0` → `3.3.1`) and:
+
+1. Ran `scripts/hep_bot/bump_version.py hepmc 3.3.1`, which rewrote `feedstocks/hepmc-feedstock/recipe/meta.yaml`'s `versions` dict with the new version + freshly-downloaded sha256.
+2. Committed and pushed that directly to `hep-forge/hepmc-feedstock`'s default branch: `[hep-bot] bump to 3.3.1`.
+3. Opened a PR **on this meta-repo** bumping the `feedstocks/hepmc-feedstock` submodule pointer to that new commit: `[hep-bot] hepmc: 3.3.0 → 3.3.1`.
+
+Merging that meta-repo PR is what actually moves this repo's copy of "which hepmc commit we're pinned to" forward — the feedstock repo itself is already updated regardless of whether/when you merge.
 
 ### Add a new package to hep-bot
 
 1. Add an entry to [`scripts/hep_bot/sources.yaml`](scripts/hep_bot/sources.yaml) with the upstream URL and version regex
 2. Add an entry to [`scripts/hep_bot/dag.yaml`](scripts/hep_bot/dag.yaml) with its `depends_on` list
 3. Set `auto_update: false` if the package should never be auto-bumped (e.g. ROOT)
+
+### Known rough edges
+
+- If a recipe's `meta.yaml` has more than one `source: url:` line (e.g. gated behind a `{% if version_major < 3 %}` jinja conditional, like hepmc's HepMC-v2 vs HepMC3-v3 archive naming), `bump_version.py` tries each candidate and uses whichever one actually resolves — it doesn't evaluate the jinja logic itself.
+- If one package's PR creation fails (e.g. it was already bumped by a previous run), `check_versions.py` logs the error and moves on to the rest of the DAG instead of aborting the whole run; it exits non-zero at the end if anything failed, so check the run log for `ERROR` lines rather than assuming a red X means nothing happened.
 
 ## Self-hosted runners
 
