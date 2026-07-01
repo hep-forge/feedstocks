@@ -69,7 +69,8 @@ for i in "${!TARGETS[@]}"; do
       echo "!Makefile" >> .gitignore && \
       echo "!.github"  >> .gitignore && \
       { git add .gitignore 2>/dev/null || true; } && \
-      find . -maxdepth 2 -name conda-build.yml -delete
+      find . -maxdepth 3 -name conda-build.yml -delete && \
+      rm -rf .scripts
   ) > "$log" 2>&1
   status=$?
 

@@ -141,7 +141,8 @@ render:
 	@echo "!Makefile" >> .gitignore
 	@echo "!.github"  >> .gitignore
 	@git add .gitignore 2>/dev/null || true
-	@find . -maxdepth 2 -name conda-build.yml -delete
+	@find . -maxdepth 3 -name conda-build.yml -delete
+	@rm -rf .scripts
 
 list:
 	@find build_artifacts -name "*.conda" ! -path "*/pkg_cache/*" 2>/dev/null || echo "(no build_artifacts yet)"
