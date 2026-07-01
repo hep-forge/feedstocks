@@ -15,6 +15,12 @@ on:
 jobs:
   rebuild:
     runs-on: ubuntu-24.04
+    # GitHub-hosted runners hard-cap a job at 6h regardless of this setting.
+    # Waiting tier-by-tier for real builds (ROOT alone takes 4-6h) can bump
+    # into that ceiling on a large rebuild — if it does, re-run starting
+    # from the first tier that didn't finish, or move this job to a
+    # self-hosted runner (see README "Self-hosted runners").
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,63 +34,141 @@ jobs:
       - name: Install dependencies
         run: pip install pyyaml
 
-      - name: Compute rebuild order and trigger builds
+      - name: Compute rebuild tiers and trigger builds
         env:
           GH_TOKEN: ${{ secrets.HEP_BOT_TOKEN }}
           ROOT_PACKAGE: ${{ inputs.root_package }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           python3 - <<'PYEOF'
-          import os, subprocess, sys, yaml
+          import datetime, json, os, subprocess, sys, time, yaml
           from pathlib import Path
 
           dag = yaml.safe_load(Path("scripts/hep_bot/dag.yaml").read_text())
           root_pkg = os.environ["ROOT_PACKAGE"]
           dry_run = os.environ["DRY_RUN"].lower() == "true"
 
-          # Topological sort of packages that depend (directly or transitively) on root_pkg
-          def dependents(pkg, dag):
-              result = []
+          if root_pkg not in dag:
+              print(f"ERROR: '{root_pkg}' is not in scripts/hep_bot/dag.yaml")
+              sys.exit(1)
+
+          # Full transitive dependent set (root_pkg + everything that depends on
+          # it directly or through any chain), via the reverse dependency graph.
+          affected = set()
+          def collect(pkg):
+              if pkg in affected:
+                  return
+              affected.add(pkg)
               for name, info in dag.items():
                   if pkg in info.get("depends_on", []):
-                      result.append(name)
-              return result
+                      collect(name)
+          collect(root_pkg)
 
-          def topo_order(start, dag):
-              visited, order = set(), []
-              def dfs(node):
-                  if node in visited: return
-                  visited.add(node)
-                  for dep in dag.get(node, {}).get("depends_on", []):
-                      dfs(dep)
-                  order.append(node)
-              dfs(start)
-              # Also include packages that depend ON start
-              for pkg in list(dag.keys()):
-                  if start in dag.get(pkg, {}).get("depends_on", []):
-                      dfs(pkg)
-              return order
+          # Tier = 1 + max(tier of its in-set deps); deps outside the affected
+          # set are assumed already up to date and don't gate anything.
+          tier_of = {}
+          def compute_tier(pkg):
+              if pkg in tier_of:
+                  return tier_of[pkg]
+              deps_in_set = [d for d in dag.get(pkg, {}).get("depends_on", []) if d in affected]
+              tier_of[pkg] = 1 if not deps_in_set else 1 + max(compute_tier(d) for d in deps_in_set)
+              return tier_of[pkg]
+          for pkg in affected:
+              compute_tier(pkg)
 
-          rebuild_order = topo_order(root_pkg, dag)
-          print(f"Rebuild order starting from '{root_pkg}':")
-          for i, pkg in enumerate(rebuild_order, 1):
-              print(f"  {i}. {pkg}")
+          tiers = {}
+          for pkg, t in tier_of.items():
+              tiers.setdefault(t, []).append(pkg)
+          max_tier = max(tiers)
+
+          print(f"Rebuild plan for '{root_pkg}' ({len(affected)} package(s), {max_tier} tier(s)):")
+          for t in range(1, max_tier + 1):
+              print(f"  Tier {t}: {', '.join(sorted(tiers[t]))}")
 
           if dry_run:
-              print("Dry-run mode: no builds triggered.")
+              print("\nDry-run mode: no builds triggered.")
               sys.exit(0)
 
-          # Trigger each feedstock's amd64+arm64 builds in order
-          for pkg in rebuild_order:
-              feedstock_repo = f"hep-forge/{pkg}-feedstock"
-              print(f"\nTriggering build for {feedstock_repo}...")
-              for arch in ["autoupload.amd64.yml", "autoupload.arm64.yml"]:
-                  result = subprocess.run(
-                      ["gh", "workflow", "run", arch, "--repo", feedstock_repo],
-                      capture_output=True, text=True
+          def workflows_for(pkg):
+              # Scheme-detect from the submodule checkout, same convention as
+              # scripts/rerun_tags.sh / scripts/feedstock_status.sh.
+              unified = Path(f"feedstocks/{pkg}-feedstock/.github/workflows/autoupload.yml")
+              if unified.exists():
+                  return ["autoupload.yml"]
+              return ["autoupload.amd64.yml", "autoupload.arm64.yml"]
+
+          def trigger(repo, workflow, since):
+              result = subprocess.run(
+                  ["gh", "workflow", "run", workflow, "--repo", repo],
+                  capture_output=True, text=True,
+              )
+              if result.returncode != 0:
+                  print(f"  WARNING: failed to trigger {workflow} for {repo}: {result.stderr.strip()}")
+                  return None
+              # workflow_dispatch doesn't return a run id; poll run list for the
+              # run that just appeared.
+              for _ in range(15):
+                  time.sleep(2)
+                  r = subprocess.run(
+                      ["gh", "run", "list", "--repo", repo, "--workflow", workflow,
+                       "--limit", "5", "--json", "databaseId,createdAt,event"],
+                      capture_output=True, text=True,
                   )
-                  if result.returncode != 0:
-                      print(f"  WARNING: failed to trigger {arch} for {feedstock_repo}: {result.stderr}")
-                  else:
-                      print(f"  Triggered {arch}")
+                  if r.returncode != 0:
+                      continue
+                  try:
+                      runs = json.loads(r.stdout)
+                  except json.JSONDecodeError:
+                      runs = []
+                  for run in runs:
+                      if run["event"] != "workflow_dispatch":
+                          continue
+                      created = datetime.datetime.fromisoformat(run["createdAt"].replace("Z", "+00:00"))
+                      if created >= since:
+                          return run["databaseId"]
+              print(f"  WARNING: triggered {workflow} for {repo} but couldn't find its run id to track")
+              return None
+
+          def wait_for(tracked, poll_seconds=30):
+              pending = set(tracked)
+              failed = []
+              while pending:
+                  time.sleep(poll_seconds)
+                  for item in list(pending):
+                      repo, workflow, run_id = item
+                      r = subprocess.run(
+                          ["gh", "run", "view", str(run_id), "--repo", repo, "--json", "status,conclusion"],
+                          capture_output=True, text=True,
+                      )
+                      if r.returncode != 0:
+                          continue
+                      info = json.loads(r.stdout)
+                      if info["status"] != "completed":
+                          continue
+                      pending.discard(item)
+                      if info["conclusion"] == "success":
+                          print(f"  done: {repo} {workflow} (run {run_id})")
+                      else:
+                          print(f"  FAILED: {repo} {workflow} (run {run_id}): {info['conclusion']}")
+                          failed.append(item)
+              return failed
+
+          for t in range(1, max_tier + 1):
+              pkgs = sorted(tiers[t])
+              print(f"\n=== Tier {t}: {', '.join(pkgs)} ===")
+              since = datetime.datetime.now(datetime.timezone.utc)
+              tracked = []
+              for pkg in pkgs:
+                  repo = f"hep-forge/{pkg}-feedstock"
+                  for workflow in workflows_for(pkg):
+                      print(f"Triggering {workflow} for {repo}...")
+                      run_id = trigger(repo, workflow, since)
+                      if run_id is not None:
+                          tracked.append((repo, workflow, run_id))
+
+              print(f"Waiting for tier {t} ({len(tracked)} run(s)) to finish before starting the next tier...")
+              failed = wait_for(tracked)
+              if failed:
+                  print(f"\nERROR: tier {t} had {len(failed)} failed run(s); aborting remaining tiers.")
+                  sys.exit(1)
           PYEOF
