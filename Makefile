@@ -18,6 +18,9 @@
 #   make status          Tags/branches + last AMD64/ARM64/macOS build dates
 #   make rerun FEEDSTOCK=<name>    Trigger a rebuild (amd64+arm64+macos-arm64 in parallel, if migrated)
 #   make add-macos FEEDSTOCK=<name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
+#   make add-macos-all   Migrate every feedstock not yet on the unified workflow
+#   make root-bump VERSION=<x.y>  Roll a new ROOT version out to all consumers, trim to newest 2
+#   make root-trim       Cap all consumers' root: lists at the newest 2, no new version
 #
 # Per-feedstock usage (after 'make distribute' or cp):
 #   make forge          Install conda-smithy + tools
@@ -35,7 +38,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status rerun add-macos add-macos-all
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status rerun add-macos add-macos-all root-bump root-trim
 
 all: forge render readme
 
@@ -108,6 +111,23 @@ endif
 # `make render` to regenerate the resulting .ci_support scaffolding.
 add-macos-all:
 	@bash scripts/add_macos_arm64.sh --all
+
+# ROOT is manually versioned (dag.yaml: auto_update: false). When a new
+# ROOT release should roll out, this adds it to every downstream
+# feedstock's recipe/conda_build_config.yaml `root:` variant list and
+# drops the oldest, keeping (by default) the newest 2 concurrent
+# versions. Commits + pushes each affected feedstock directly.
+#   make root-bump VERSION=6.40            add 6.40, trim to newest 2
+#   make root-bump VERSION=6.40 KEEP=3      custom cap
+#   make root-trim                          just cap existing lists, no new version
+root-bump:
+ifndef VERSION
+	$(error Usage: make root-bump VERSION=<x.y>   (e.g. make root-bump VERSION=6.40))
+endif
+	@python3 scripts/hep_bot/root_versions.py $(VERSION) $(if $(KEEP),--keep $(KEEP))
+
+root-trim:
+	@python3 scripts/hep_bot/root_versions.py --trim $(if $(KEEP),--keep $(KEEP))
 
 # Copy this Makefile into every feedstock directory
 distribute:
