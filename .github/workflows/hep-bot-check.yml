@@ -21,6 +21,11 @@ jobs:
       - name: Install dependencies
         run: pip install requests pyyaml packaging
 
+      - name: Configure git identity
+        run: |
+          git config --global user.name "hep-bot"
+          git config --global user.email "hep-bot@users.noreply.github.com"
+
       - name: Check upstream versions
         env:
           GITHUB_TOKEN: ${{ secrets.HEP_BOT_TOKEN }}
