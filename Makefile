@@ -35,7 +35,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status rerun add-macos
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status rerun add-macos add-macos-all
 
 all: forge render readme
 
@@ -95,13 +95,19 @@ endif
 
 # Migrate one feedstock's CI from separate amd64/arm64 workflows to the
 # unified amd64 + linux-arm64 + macos-arm64 matrix workflow.
-# FEEDSTOCK= is required (mass-migrating 56 repos unattended is not a good idea —
-# review + commit + push each one). See scripts/add_macos_arm64.sh for details.
+# FEEDSTOCK= is required (see scripts/add_macos_arm64.sh for details).
 add-macos:
 ifndef FEEDSTOCK
 	$(error Usage: make add-macos FEEDSTOCK=<feedstock-name>   (e.g. make add-macos FEEDSTOCK=fastjet-feedstock))
 endif
 	@bash scripts/add_macos_arm64.sh $(FEEDSTOCK)
+
+# Migrate every feedstock not yet on the unified workflow, in one pass.
+# Only rewrites CI plumbing (conda-forge.yml + autoupload.yml) -- does not
+# commit, push, or fix per-package macOS build issues. Follow with
+# `make render` to regenerate the resulting .ci_support scaffolding.
+add-macos-all:
+	@bash scripts/add_macos_arm64.sh --all
 
 # Copy this Makefile into every feedstock directory
 distribute:
