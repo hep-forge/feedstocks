@@ -129,16 +129,23 @@ def create_pr(feedstock: str, old_ver: str, new_ver: str) -> None:
     submodule = f"feedstocks/{feedstock}-feedstock"
     submodule_path = REPO_ROOT / submodule
 
-    default_branch = subprocess.run(
-        ["git", "symbolic-ref", "--short", "HEAD"],
+    # actions/checkout leaves submodules in detached HEAD, so there's no
+    # local branch to read -- ask the remote what its default branch is.
+    symref = subprocess.run(
+        ["git", "ls-remote", "--symref", "origin", "HEAD"],
         cwd=submodule_path, check=True, capture_output=True, text=True,
-    ).stdout.strip()
+    ).stdout.splitlines()[0]
+    default_branch = symref.split()[1].removeprefix("refs/heads/")
     subprocess.run(["git", "add", "recipe/meta.yaml"], cwd=submodule_path, check=True)
     subprocess.run(
         ["git", "commit", "-m", f"[hep-bot] bump to {new_ver}"],
         cwd=submodule_path, check=True,
     )
-    subprocess.run(["git", "push", "origin", default_branch], cwd=submodule_path, check=True)
+    # Push directly from detached HEAD to the named branch.
+    subprocess.run(
+        ["git", "push", "origin", f"HEAD:refs/heads/{default_branch}"],
+        cwd=submodule_path, check=True,
+    )
 
     branch = f"hep-bot/{feedstock}-{new_ver}"
     subprocess.run(["git", "checkout", "-b", branch], cwd=REPO_ROOT, check=True)
