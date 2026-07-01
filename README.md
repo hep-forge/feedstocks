@@ -150,6 +150,45 @@ gated the same way or the variant solver errors out on osx. See the commit histo
 [`feedstocks/cubature-feedstock`](https://github.com/hep-forge/cubature-feedstock) for a
 worked example of both the CI migration and the recipe fixes it needed.
 
+### Multiple concurrent version lines
+
+Some upstream projects maintain two active major lines at once (e.g. PYTHIA
+6.x and 8.x), or this repo needs to keep more than one build of something
+around on purpose. The convention: **one branch per line, one branch = one
+Anaconda label** (see `scripts/rerun_tags.sh`'s header comment) — same
+package name on every branch, different `recipe/` content, published under
+the branch name as the label.
+
+`apfel`, `hathor`, and `mcfm`-feedstock already do this with a `legacy`
+branch for their older API line; `pythia-feedstock` follows the same
+pattern for PYTHIA 6 (frozen at 6.4.28 since 2013, alongside `main`'s
+actively-updated 8.x). Install a specific line with
+`conda install -c hep-forge pythia --channel-label legacy` (or whatever
+label the branch publishes under).
+
+Keeping a `legacy`-style branch minimal and current is on you — hep-bot's
+version check has no concept of "also check this other branch," so a
+frozen line like PYTHIA 6 needs no upkeep, but an *actively releasing*
+second line would need its own manual bump process (or a
+`scripts/hep_bot` extension neither exists yet).
+
+### ROOT's rolling version window
+
+ROOT is manually versioned (`dag.yaml`: `auto_update: false`), but ~14
+downstream feedstocks (rivet, rapgap, xfitter, hepmc, yoda, …) build a
+matrix against multiple concurrent ROOT versions via a `root:` variant
+list in `recipe/conda_build_config.yaml`. To keep that list from growing
+forever, it's capped at the newest 2 versions:
+
+```bash
+make root-bump VERSION=6.40      # add 6.40 to every consumer, drop the oldest, keep 2
+make root-bump VERSION=6.40 KEEP=3   # custom cap
+make root-trim                   # just cap existing lists at 2, no new version
+```
+
+This commits and pushes each affected feedstock directly (see
+`scripts/hep_bot/root_versions.py`).
+
 ### Rebuild order (DAG)
 
 Rebuild in tier order; publish each tier before starting the next:
