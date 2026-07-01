@@ -178,16 +178,26 @@ ROOT is manually versioned (`dag.yaml`: `auto_update: false`), but ~14
 downstream feedstocks (rivet, rapgap, xfitter, hepmc, yoda, …) build a
 matrix against multiple concurrent ROOT versions via a `root:` variant
 list in `recipe/conda_build_config.yaml`. To keep that list from growing
-forever, it's capped at the newest 2 versions:
+forever, it's capped at the newest 2 versions using a generic helper that
+works for *any* variant key used this way, not just `root:`
+(`scripts/hep_bot/variant_versions.py` — e.g. `escalade`/`root-plus`-feedstock
+also zip `libtorch:` against `root:`):
 
 ```bash
-make root-bump VERSION=6.40      # add 6.40 to every consumer, drop the oldest, keep 2
-make root-bump VERSION=6.40 KEEP=3   # custom cap
-make root-trim                   # just cap existing lists at 2, no new version
+make root-bump VERSION=6.40           # ROOT-specific alias: add 6.40, drop the oldest, keep 2
+make root-trim                        # ROOT-specific alias: just cap existing lists, no new version
+
+make variant-bump KEY=libtorch VERSION=2.9.0    # same thing for any other key
+make variant-trim KEY=libtorch
 ```
 
-This commits and pushes each affected feedstock directly (see
-`scripts/hep_bot/root_versions.py`).
+If the target key is `zip_keys`-paired with another key (positional
+pairing — `root[i]` always builds against `libtorch[i]`), the whole
+group is trimmed together automatically so the pairing stays valid;
+adding a *new* version to a zip-paired key needs an explicit value for
+its partner(s): `make variant-bump KEY=root VERSION=6.40 PAIR="libtorch=2.8.0"`.
+
+This commits and pushes each affected feedstock directly.
 
 ### Rebuild order (DAG)
 

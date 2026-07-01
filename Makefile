@@ -19,8 +19,10 @@
 #   make rerun FEEDSTOCK=<name>    Trigger a rebuild (amd64+arm64+macos-arm64 in parallel, if migrated)
 #   make add-macos FEEDSTOCK=<name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
 #   make add-macos-all   Migrate every feedstock not yet on the unified workflow
-#   make root-bump VERSION=<x.y>  Roll a new ROOT version out to all consumers, trim to newest 2
-#   make root-trim       Cap all consumers' root: lists at the newest 2, no new version
+#   make variant-bump KEY=<name> VERSION=<value>  Roll a new version of any variant key out to consumers, trim to newest 2
+#   make variant-trim KEY=<name>  Cap consumers' <name>: lists at the newest 2, no new version
+#   make root-bump VERSION=<x.y>  Alias for variant-bump KEY=root
+#   make root-trim       Alias for variant-trim KEY=root
 #
 # Per-feedstock usage (after 'make distribute' or cp):
 #   make forge          Install conda-smithy + tools
@@ -38,7 +40,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status rerun add-macos add-macos-all root-bump root-trim
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status rerun add-macos add-macos-all variant-bump variant-trim root-bump root-trim
 
 all: forge render readme
 
@@ -112,22 +114,43 @@ endif
 add-macos-all:
 	@bash scripts/add_macos_arm64.sh --all
 
-# ROOT is manually versioned (dag.yaml: auto_update: false). When a new
-# ROOT release should roll out, this adds it to every downstream
-# feedstock's recipe/conda_build_config.yaml `root:` variant list and
-# drops the oldest, keeping (by default) the newest 2 concurrent
-# versions. Commits + pushes each affected feedstock directly.
-#   make root-bump VERSION=6.40            add 6.40, trim to newest 2
-#   make root-bump VERSION=6.40 KEEP=3      custom cap
-#   make root-trim                          just cap existing lists, no new version
+# Generic "keep minimal concurrent versions" helper for any variant key
+# used across feedstocks' recipe/conda_build_config.yaml (root, libtorch,
+# ...). Zip_keys-paired keys are trimmed/extended together automatically;
+# adding a version to a zip-paired key needs --pair for its partner(s).
+# Commits + pushes each affected feedstock directly.
+#   make variant-bump KEY=root VERSION=6.40                          add + trim to newest 2
+#   make variant-bump KEY=root VERSION=6.40 KEEP=3                   custom cap
+#   make variant-bump KEY=root VERSION=6.40 PAIR="libtorch=2.8.0"    zip-paired key
+#   make variant-trim KEY=root                                       just cap existing lists
+variant-bump:
+ifndef KEY
+	$(error Usage: make variant-bump KEY=<name> VERSION=<value>   (e.g. make variant-bump KEY=root VERSION=6.40))
+endif
+ifndef VERSION
+	$(error Usage: make variant-bump KEY=<name> VERSION=<value>   (e.g. make variant-bump KEY=root VERSION=6.40))
+endif
+	@python3 scripts/hep_bot/variant_versions.py --key $(KEY) $(VERSION) $(if $(KEEP),--keep $(KEEP)) $(if $(PAIR),--pair $(PAIR))
+
+variant-trim:
+ifndef KEY
+	$(error Usage: make variant-trim KEY=<name>   (e.g. make variant-trim KEY=root))
+endif
+	@python3 scripts/hep_bot/variant_versions.py --key $(KEY) --trim $(if $(KEEP),--keep $(KEEP))
+
+# Convenience aliases for ROOT specifically (manually versioned, dag.yaml:
+# auto_update: false -- this is what you run by hand when a new release
+# should roll out to the ~14 downstream consumers).
+#   make root-bump VERSION=6.40
+#   make root-trim
 root-bump:
 ifndef VERSION
 	$(error Usage: make root-bump VERSION=<x.y>   (e.g. make root-bump VERSION=6.40))
 endif
-	@python3 scripts/hep_bot/root_versions.py $(VERSION) $(if $(KEEP),--keep $(KEEP))
+	@$(MAKE) variant-bump KEY=root VERSION=$(VERSION)
 
 root-trim:
-	@python3 scripts/hep_bot/root_versions.py --trim $(if $(KEEP),--keep $(KEEP))
+	@$(MAKE) variant-trim KEY=root
 
 # Copy this Makefile into every feedstock directory
 distribute:
