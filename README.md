@@ -4,7 +4,7 @@
 
 Meta-repository of conda feedstocks for High Energy Physics software, published to the **[hep-forge](https://anaconda.org/hep-forge)** Anaconda channel.
 
-Packages are built for **Linux amd64** and **Linux arm64** and can be installed alongside [conda-forge](https://conda-forge.org).
+Packages are built for **Linux amd64**, **Linux arm64**, and (for feedstocks migrated to the unified CI workflow, see below) **macOS arm64**, and can be installed alongside [conda-forge](https://conda-forge.org).
 
 ## Install
 
@@ -46,14 +46,18 @@ hep-feedstocks/
 │   │   │   ├── meta.yaml            # Build recipe
 │   │   │   └── conda_build_config.yaml
 │   │   ├── .github/workflows/
-│   │   │   ├── autoupload.amd64.yml # AMD64 build + upload to hep-forge
-│   │   │   └── autoupload.arm64.yml # ARM64 build + upload to hep-forge
+│   │   │   └── autoupload.yml       # amd64 + arm64 + macos-arm64 matrix build + upload
+│   │   │       # (older, unmigrated feedstocks instead have a separate
+│   │   │       #  autoupload.amd64.yml / autoupload.arm64.yml pair — see
+│   │   │       #  "Build workflow" below)
 │   │   ├── conda-forge.yml          # conda-smithy config (hep-forge channel)
 │   │   └── Makefile                 # Local dev shortcuts (same as root)
 │   └── …
 ├── scripts/
 │   ├── generate_readme.py   # Regenerate all feedstock READMEs → hep-forge
 │   ├── rerender_all.sh      # Run generate_readme.py across all feedstocks
+│   ├── add_macos_arm64.sh   # Migrate one feedstock to the amd64+arm64+macos-arm64 matrix workflow
+│   ├── templates/autoupload.yml  # Canonical 3-way matrix workflow used by add_macos_arm64.sh
 │   └── hep_bot/
 │       ├── sources.yaml     # Upstream version URLs for each package
 │       ├── dag.yaml         # Dependency graph (rebuild order)
@@ -87,9 +91,10 @@ make readme       # Regenerate all README.md files pointed at hep-forge
 make list         # List all locally built .conda packages
 make anaconda     # Upload all built packages to the hep-forge channel
 make bot-check    # Dry-run upstream version check (hep-bot)
-make status       # Table: feedstock | tags | branches (=labels) | last build date
+make status       # Table: feedstock | tags | branches (=labels) | last amd64/arm64/macOS build date
 make status FEEDSTOCK=rivet-feedstock    # Status for one feedstock
-make rerun FEEDSTOCK=fastjet-feedstock   # Trigger one feedstock rebuild at its latest tag
+make rerun FEEDSTOCK=fastjet-feedstock   # Trigger one feedstock rebuild at its latest tag (all arches in parallel, if migrated)
+make add-macos FEEDSTOCK=fastjet-feedstock  # Migrate one feedstock to the amd64+arm64+macos-arm64 matrix workflow
 make distribute   # Copy this Makefile into every feedstock
 make debug FEEDSTOCK=fastjet-feedstock   # Debug one feedstock build
 ```
@@ -109,10 +114,41 @@ make debug        # Debug this feedstock's build
 Packages are built and uploaded automatically on each tagged commit in the feedstock repo. The GitHub Actions workflow:
 
 1. Detects the tag → derives `ANACONDA_PACKAGE`, `ANACONDA_VERSION`, `ANACONDA_LABEL`
-2. Builds with `conda build recipe/` on both AMD64 (`ubuntu-24.04`) and ARM64 (`ubuntu-24.04-arm` or self-hosted)
+2. Builds with `conda build recipe/` on amd64, arm64, and (once migrated) macos-arm64
 3. Uploads `.conda` packages to `https://anaconda.org/hep-forge/` with `anaconda upload --label <branch>`
 
-To trigger a build: push a git tag inside the feedstock submodule.
+To trigger a build: push a git tag inside the feedstock submodule, or `make rerun FEEDSTOCK=<name>`.
+
+### amd64 + arm64 + macos-arm64 matrix workflow
+
+Feedstocks migrated to `scripts/templates/autoupload.yml` build all three architectures as
+one GitHub Actions run with a 3-leg matrix (`build (amd64, ubuntu-24.04, linux)`,
+`build (arm64, ubuntu-24.04-arm, linux)`, `build (macos-arm64, macos-14, macos)`) — they
+run in parallel and show up as three branches in the same run graph, instead of three
+separate workflow files/runs. A single `publish` job waits on all three legs and uploads
+every `.conda` it collects in one pass.
+
+Feedstocks not yet migrated still use the older `autoupload.amd64.yml` +
+`autoupload.arm64.yml` pair (Linux only, two separate workflow runs).
+`make rerun` / `scripts/rerun_tags.sh` and `make status` / `scripts/feedstock_status.sh`
+both detect which scheme a feedstock is on and behave accordingly.
+
+To migrate a feedstock:
+
+```bash
+make add-macos FEEDSTOCK=fastjet-feedstock   # writes autoupload.yml, drops the amd64/arm64 pair,
+                                              # adds osx_arm64 to conda-forge.yml
+cd feedstocks/fastjet-feedstock
+git diff                                     # review
+git add -A && git commit -m "ci: add macos-arm64" && git push
+```
+
+A real macOS build can surface package-specific issues conda-forge's Linux builds never hit
+— e.g. `nproc` doesn't exist on macOS (`sysctl -n hw.ncpu` does), and
+`conda_build_config.yaml` compiler pins gated with `# [linux]` need their `zip_keys` group
+gated the same way or the variant solver errors out on osx. See the commit history of
+[`feedstocks/cubature-feedstock`](https://github.com/hep-forge/cubature-feedstock) for a
+worked example of both the CI migration and the recipe fixes it needed.
 
 ### Rebuild order (DAG)
 
@@ -244,24 +280,29 @@ bash Miniforge3-Linux-aarch64.sh -b -p ~/miniconda3
 
 ### Step 4 — Route a feedstock to your runner
 
-The workflows use GitHub-hosted runners by default. To switch a specific feedstock to your machine, edit the `runs-on:` line in its `.github/workflows/autoupload.amd64.yml`:
+The workflows use GitHub-hosted runners by default. To switch a specific feedstock to your
+machine, edit the matrix `runs-on:` value for the relevant leg in its
+`.github/workflows/autoupload.yml` (or, for a feedstock not yet migrated, the `runs-on:` line
+in its `autoupload.amd64.yml` / `autoupload.arm64.yml`):
 
 ```yaml
 # Before (GitHub-hosted):
-runs-on: ubuntu-24.04
+- id: amd64
+  runs-on: ubuntu-24.04
 
 # After (your AMD64 lab machine):
-runs-on: [self-hosted, linux, X64, hep-forge-amd64]
+- id: amd64
+  runs-on: [self-hosted, linux, X64, hep-forge-amd64]
 ```
-
-And in `autoupload.arm64.yml`:
 
 ```yaml
 # Before:
-runs-on: ubuntu-24.04-arm
+- id: arm64
+  runs-on: ubuntu-24.04-arm
 
 # After (your ARM64 lab machine):
-runs-on: [self-hosted, linux, ARM64, hep-forge-arm64]
+- id: arm64
+  runs-on: [self-hosted, linux, ARM64, hep-forge-arm64]
 ```
 
 For ROOT specifically, always prefer the self-hosted ARM64 runner — ROOT's build takes 4–6 hours and GitHub's hosted ARM runners have a strict 6-hour timeout.

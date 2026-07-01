@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
-# Trigger autoupload.amd64.yml and autoupload.arm64.yml for every feedstock
-# that has at least one git tag (the tag is the package version).
+# Trigger a rebuild for every feedstock that has at least one git tag
+# (the tag is the package version).
+#
+# Feedstocks migrated to the unified 3-way matrix workflow
+# (.github/workflows/autoupload.yml) get ONE dispatch that builds
+# amd64 + linux-arm64 + macos-arm64 in parallel. Feedstocks still on the
+# legacy scheme get autoupload.amd64.yml and autoupload.arm64.yml
+# triggered separately (also in parallel — GitHub runs dispatched
+# workflows concurrently regardless).
 #
 # One tag  = one software release (uploaded to Anaconda with that version number)
 # One branch = one Anaconda label (e.g. pythia main/6.x/8.x → labels main/6/8)
@@ -9,7 +16,7 @@
 #   bash scripts/rerun_tags.sh                # trigger all feedstocks
 #   bash scripts/rerun_tags.sh fastjet        # trigger one feedstock
 #   bash scripts/rerun_tags.sh --dry-run      # print without triggering
-#   bash scripts/rerun_tags.sh --amd64-only   # skip ARM64 jobs
+#   bash scripts/rerun_tags.sh --amd64-only   # legacy scheme only: skip ARM64 jobs
 #
 # Requirements: gh CLI authenticated as a hep-forge org member
 
@@ -68,8 +75,13 @@ for dir in feedstocks/*-feedstock; do
   fi
 
   printf "%-40s tag=%s\n" "$repo" "$tag"
-  trigger "$repo" "$tag" "autoupload.amd64.yml"
-  [ "$AMD64_ONLY" -eq 0 ] && trigger "$repo" "$tag" "autoupload.arm64.yml"
+  if [ -e "$dir/.github/workflows/autoupload.yml" ]; then
+    # Unified scheme: one dispatch builds amd64 + arm64 + macos-arm64 in parallel.
+    trigger "$repo" "$tag" "autoupload.yml"
+  else
+    trigger "$repo" "$tag" "autoupload.amd64.yml"
+    [ "$AMD64_ONLY" -eq 0 ] && trigger "$repo" "$tag" "autoupload.arm64.yml"
+  fi
   TRIGGERED=$((TRIGGERED+1))
 done
 

@@ -13,6 +13,9 @@
 #   make bot-check      Dry-run upstream version check (hep-bot)
 #   make distribute     Copy this Makefile into every feedstock
 #   make debug FEEDSTOCK=<name>  Debug one feedstock build
+#   make status          Tags/branches + last AMD64/ARM64/macOS build dates
+#   make rerun FEEDSTOCK=<name>    Trigger a rebuild (amd64+arm64+macos-arm64 in parallel, if migrated)
+#   make add-macos FEEDSTOCK=<name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
 #
 # Per-feedstock usage (after 'make distribute' or cp):
 #   make forge          Install conda-smithy + tools
@@ -30,7 +33,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render readme list anaconda bot-check distribute debug status rerun
+.PHONY: all forge render readme list anaconda bot-check distribute debug status rerun add-macos
 
 all: forge render readme
 
@@ -79,7 +82,7 @@ anaconda:
 bot-check:
 	@python3 scripts/hep_bot/check_versions.py --dry-run
 
-# Show feedstock status: tags, last AMD64/ARM64 build dates, branches (= conda labels)
+# Show feedstock status: tags, last AMD64/ARM64/macOS build dates, branches (= conda labels)
 status:
 ifdef FEEDSTOCK
 	@bash scripts/feedstock_status.sh $(FEEDSTOCK)
@@ -88,11 +91,23 @@ else
 endif
 
 # Trigger a rebuild at the latest tag — FEEDSTOCK= is required to prevent flooding runners
+# Builds amd64 + linux-arm64 + macos-arm64 in parallel (one dispatch) for
+# feedstocks already migrated to the unified autoupload.yml workflow.
 rerun:
 ifndef FEEDSTOCK
 	$(error Usage: make rerun FEEDSTOCK=<feedstock-name>   (e.g. make rerun FEEDSTOCK=fastjet-feedstock))
 endif
 	@bash scripts/rerun_tags.sh $(FEEDSTOCK)
+
+# Migrate one feedstock's CI from separate amd64/arm64 workflows to the
+# unified amd64 + linux-arm64 + macos-arm64 matrix workflow.
+# FEEDSTOCK= is required (mass-migrating 56 repos unattended is not a good idea —
+# review + commit + push each one). See scripts/add_macos_arm64.sh for details.
+add-macos:
+ifndef FEEDSTOCK
+	$(error Usage: make add-macos FEEDSTOCK=<feedstock-name>   (e.g. make add-macos FEEDSTOCK=fastjet-feedstock))
+endif
+	@bash scripts/add_macos_arm64.sh $(FEEDSTOCK)
 
 # Copy this Makefile into every feedstock directory
 distribute:
