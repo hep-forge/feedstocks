@@ -23,7 +23,7 @@ jobs:
 
       - name: Configure git identity
         run: |
-          git config --global user.name "hep-bot"
+          git config --global user.name "HEP Bot"
           git config --global user.email "hep-bot@users.noreply.github.com"
 
       - name: Check upstream versions

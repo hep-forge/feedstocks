@@ -117,14 +117,30 @@ def fetch_upstream(feedstock: str) -> str | None:
 
 
 def create_pr(feedstock: str, old_ver: str, new_ver: str) -> None:
-    """Trigger bump_version.py and open a PR via gh CLI."""
+    """Trigger bump_version.py, commit+push that change inside the feedstock's
+    own repo (it's a separate git repo -- editing meta.yaml there does nothing
+    until it's committed there), then open a meta-repo PR that bumps the
+    submodule pointer to match."""
     bump_script = Path(__file__).parent / "bump_version.py"
     subprocess.run(
         [sys.executable, str(bump_script), feedstock, new_ver],
         check=True
     )
-    branch = f"hep-bot/{feedstock}-{new_ver}"
     submodule = f"feedstocks/{feedstock}-feedstock"
+    submodule_path = REPO_ROOT / submodule
+
+    default_branch = subprocess.run(
+        ["git", "symbolic-ref", "--short", "HEAD"],
+        cwd=submodule_path, check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    subprocess.run(["git", "add", "recipe/meta.yaml"], cwd=submodule_path, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", f"[hep-bot] bump to {new_ver}"],
+        cwd=submodule_path, check=True,
+    )
+    subprocess.run(["git", "push", "origin", default_branch], cwd=submodule_path, check=True)
+
+    branch = f"hep-bot/{feedstock}-{new_ver}"
     subprocess.run(["git", "checkout", "-b", branch], cwd=REPO_ROOT, check=True)
     subprocess.run(["git", "add", submodule], cwd=REPO_ROOT, check=True)
     subprocess.run(
