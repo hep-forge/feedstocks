@@ -7,6 +7,8 @@
 # Meta-repo usage:
 #   make forge          Install conda-smithy + tools
 #   make render         Rerender all feedstocks (or: make render FEEDSTOCK=fastjet-feedstock)
+#                       one PASS/FAIL line per feedstock; full logs in .render-logs/
+#   make render-retry   Re-run only the feedstocks that failed the last render
 #   make readme         Regenerate all README.md files (hep-forge badges/links)
 #   make list           List all built .conda packages across feedstocks
 #   make anaconda       Upload all built packages to hep-forge channel
@@ -33,7 +35,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render readme list anaconda bot-check distribute debug status rerun add-macos
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status rerun add-macos
 
 all: forge render readme
 
@@ -42,27 +44,19 @@ forge:
 	    conda-smithy conda-verify conda-package-handling anaconda-client
 
 # Rerender all feedstocks, or one: make render FEEDSTOCK=fastjet-feedstock
+# Prints one PASS/FAIL line per feedstock as it goes; full output for each
+# goes to .render-logs/<feedstock>.log. Non-zero exit if anything failed.
 render:
 ifdef FEEDSTOCK
-	@echo "=== Rerendering feedstocks/$(FEEDSTOCK) ==="
-	@cd feedstocks/$(FEEDSTOCK) && \
-	    conda smithy rerender --no-check-uptodate && \
-	    echo "!Makefile" >> .gitignore && \
-	    echo "!.github"  >> .gitignore && \
-	    git add .gitignore 2>/dev/null || true && \
-	    find . -maxdepth 2 -name conda-build.yml -delete
+	@bash scripts/render_all.sh $(FEEDSTOCK)
 else
-	@for dir in $(FEEDSTOCKS); do \
-	    echo "=== Rerendering $$dir ==="; \
-	    (cd $$dir && \
-	        conda smithy rerender --no-check-uptodate && \
-	        echo "!Makefile" >> .gitignore && \
-	        echo "!.github"  >> .gitignore && \
-	        git add .gitignore 2>/dev/null || true && \
-	        find . -maxdepth 2 -name conda-build.yml -delete \
-	    ) || echo "WARNING: rerender failed for $$dir"; \
-	done
+	@bash scripts/render_all.sh
 endif
+
+# Re-run only the feedstocks that failed the last `make render`
+# (from .render-logs/FAILED) — fix, then replay just those.
+render-retry:
+	@bash scripts/render_all.sh --retry
 
 readme:
 	@python3 scripts/rerender_all.sh hep-forge
