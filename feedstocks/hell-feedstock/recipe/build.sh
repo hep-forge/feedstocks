@@ -5,7 +5,8 @@ tar --transform='s,^HELL/,,' -xzvf HELL-data.v3.tgz
 wget https://www.roma1.infn.it/~bonvini/hell/downloads/HELL-data-aux.v3.tgz
 tar --transform='s,^HELL/,,' -xzvf HELL-data-aux.v3.tgz
 
-make -j$(nproc)
+NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu)
+make -j$NPROC
 
 mkdir -p ${PREFIX}/lib
 cp -R libhell.a ${PREFIX}/lib
