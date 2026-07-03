@@ -74,6 +74,14 @@ for i in "${!TARGETS[@]}"; do
   ) > "$log" 2>&1
   status=$?
 
+  # conda-smithy writes a conda-forge-flavored README (conda-forge badges,
+  # channels, links); replace it with the hep-forge one. skip_render in
+  # conda-forge.yml stops smithy from writing it at all, but regenerate
+  # unconditionally so pre-skip_render feedstocks converge too.
+  if [ "$status" -eq 0 ]; then
+    python3 scripts/generate_readme.py "$dir" hep-forge >> "$log" 2>&1 || status=$?
+  fi
+
   if [ "$status" -eq 0 ]; then
     OK=$((OK + 1))
     printf "[%2d/%2d] %-35s OK\n" "$n" "$TOTAL" "$repo"

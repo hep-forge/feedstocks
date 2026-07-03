@@ -15,8 +15,11 @@
 #   make bot-check      Dry-run upstream version check (hep-bot)
 #   make distribute     Copy this Makefile into every feedstock
 #   make debug FEEDSTOCK=<name>  Debug one feedstock build
-#   make status          Tags/branches + last AMD64/ARM64/macOS build dates
-#   make rerun FEEDSTOCK=<name>    Trigger a rebuild (amd64+arm64+macos-arm64 in parallel, if migrated)
+#   make status          Tags/branches + last AMD64/ARM64 build dates
+#   make ci-status       Latest workflow run per feedstock (PASS/FAIL/RUNNING + link)
+#   make ci-status FEEDSTOCK=<name>  Same, one feedstock
+#   make rerun FEEDSTOCK=<name>    Rebuild one feedstock at its latest tag (real release)
+#   make rerun-all       Rebuild ALL feedstocks on their default branch (".dev" validation builds)
 #   make add-macos FEEDSTOCK=<name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
 #   make add-macos-all   Migrate every feedstock not yet on the unified workflow
 #   make variant-bump KEY=<name> VERSION=<value>  Roll a new version of any variant key out to consumers, trim to newest 2
@@ -40,7 +43,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status rerun add-macos add-macos-all variant-bump variant-trim root-bump root-trim
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
 
 all: forge render readme
 
@@ -64,7 +67,7 @@ render-retry:
 	@bash scripts/render_all.sh --retry
 
 readme:
-	@python3 scripts/rerender_all.sh hep-forge
+	@bash scripts/rerender_all.sh hep-forge
 
 list:
 	@find feedstocks -name "*.conda" ! -path "*/pkg_cache/*"
@@ -89,14 +92,30 @@ else
 	@bash scripts/feedstock_status.sh
 endif
 
+# Latest workflow run per feedstock, including failures and in-progress runs
+# (make status only shows last SUCCESS dates). Non-zero exit if any latest
+# run failed, so bots/cron can gate on it.
+ci-status:
+ifdef FEEDSTOCK
+	@bash scripts/ci_status.sh $(FEEDSTOCK)
+else
+	@bash scripts/ci_status.sh
+endif
+
 # Trigger a rebuild at the latest tag — FEEDSTOCK= is required to prevent flooding runners
-# Builds amd64 + linux-arm64 + macos-arm64 in parallel (one dispatch) for
-# feedstocks already migrated to the unified autoupload.yml workflow.
+# Builds amd64 + linux-arm64 in parallel (one dispatch) for feedstocks on
+# the unified autoupload.yml workflow. Uses the recipe AS OF THE TAG.
 rerun:
 ifndef FEEDSTOCK
 	$(error Usage: make rerun FEEDSTOCK=<feedstock-name>   (e.g. make rerun FEEDSTOCK=fastjet-feedstock))
 endif
 	@bash scripts/rerun_tags.sh $(FEEDSTOCK)
+
+# Rebuild EVERY feedstock on its default branch: validates the current
+# recipe/CI state end-to-end. Versions get a ".dev" suffix so they don't
+# collide with tagged releases. Follow with `make ci-status`.
+rerun-all:
+	@bash scripts/rerun_tags.sh --main
 
 # Migrate one feedstock's CI from separate amd64/arm64 workflows to the
 # unified amd64 + linux-arm64 + macos-arm64 matrix workflow.

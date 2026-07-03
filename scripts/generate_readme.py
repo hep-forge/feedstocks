@@ -33,17 +33,20 @@ def make_readme(feedstock_dir: Path, org: str) -> str:
     return f"""\
 # {repo}
 
-[![Build AMD64](https://github.com/{org}/{repo}/actions/workflows/autoupload.amd64.yml/badge.svg)](https://github.com/{org}/{repo}/actions/workflows/autoupload.amd64.yml)
-[![Build ARM64](https://github.com/{org}/{repo}/actions/workflows/autoupload.arm64.yml/badge.svg)](https://github.com/{org}/{repo}/actions/workflows/autoupload.arm64.yml)
+[![Build & Upload](https://github.com/{org}/{repo}/actions/workflows/autoupload.yml/badge.svg)](https://github.com/{org}/{repo}/actions/workflows/autoupload.yml)
+[![Anaconda Version](https://anaconda.org/{org}/{pkg_name}/badges/version.svg)](https://anaconda.org/{org}/{pkg_name})
+[![Anaconda Platforms](https://anaconda.org/{org}/{pkg_name}/badges/platforms.svg)](https://anaconda.org/{org}/{pkg_name})
 
-Feedstock for {pkg_link} — part of [hep-forge](https://anaconda.org/hep-forge).
+Feedstock for {pkg_link} — part of [hep-forge](https://anaconda.org/{org}).
+Builds linux-amd64 + linux-arm64 in one matrix workflow and uploads to the
+[{org}](https://anaconda.org/{org}) Anaconda channel.
 
 {summary}
 
 ## Install
 
 ```bash
-conda install -c hep-forge -c conda-forge {pkg_name}
+conda install -c {org} -c conda-forge {pkg_name}
 ```
 
 ## Maintainers

@@ -91,13 +91,21 @@ make readme       # Regenerate all README.md files pointed at hep-forge
 make list         # List all locally built .conda packages
 make anaconda     # Upload all built packages to the hep-forge channel
 make bot-check    # Dry-run upstream version check (hep-bot)
-make status       # Table: feedstock | tags | branches (=labels) | last amd64/arm64/macOS build date
+make status       # Table: feedstock | tags | branches (=labels) | last successful build dates
 make status FEEDSTOCK=rivet-feedstock    # Status for one feedstock
-make rerun FEEDSTOCK=fastjet-feedstock   # Trigger one feedstock rebuild at its latest tag (all arches in parallel, if migrated)
-make add-macos FEEDSTOCK=fastjet-feedstock  # Migrate one feedstock to the amd64+arm64+macos-arm64 matrix workflow
+make ci-status    # LATEST workflow run per feedstock: PASS/FAIL/RUNNING + link.
+                  # Exits non-zero if anything failed — bot/cron friendly.
+make ci-status FEEDSTOCK=rivet-feedstock # Same, one feedstock
+make rerun FEEDSTOCK=fastjet-feedstock   # Rebuild one feedstock at its latest tag (recipe AS OF THE TAG)
+make rerun-all    # Rebuild ALL feedstocks on their default branch (current recipes,
+                  # versions get a ".dev" suffix) — use to validate fixes end-to-end
 make distribute   # Copy this Makefile into every feedstock
 make debug FEEDSTOCK=fastjet-feedstock   # Debug one feedstock build
 ```
+
+> `make status` only shows the last *successful* build dates — a feedstock
+> whose latest run failed still shows its old green date there. Use
+> `make ci-status` to see failures and in-progress runs.
 
 ### Per-feedstock level (after `make distribute` or `cd feedstocks/X && make`)
 
@@ -114,41 +122,44 @@ make debug        # Debug this feedstock's build
 Packages are built and uploaded automatically on each tagged commit in the feedstock repo. The GitHub Actions workflow:
 
 1. Detects the tag → derives `ANACONDA_PACKAGE`, `ANACONDA_VERSION`, `ANACONDA_LABEL`
-2. Builds with `conda build recipe/` on amd64, arm64, and (once migrated) macos-arm64
+2. Builds with `conda build recipe/` on linux-amd64 and linux-arm64
 3. Uploads `.conda` packages to `https://anaconda.org/hep-forge/` with `anaconda upload --label <branch>`
 
 To trigger a build: push a git tag inside the feedstock submodule, or `make rerun FEEDSTOCK=<name>`.
 
-### amd64 + arm64 + macos-arm64 matrix workflow
+### amd64 + arm64 matrix workflow
 
-Feedstocks migrated to `scripts/templates/autoupload.yml` build all three architectures as
-one GitHub Actions run with a 3-leg matrix (`build (amd64, ubuntu-24.04, linux)`,
-`build (arm64, ubuntu-24.04-arm, linux)`, `build (macos-arm64, macos-14, macos)`) — they
-run in parallel and show up as three branches in the same run graph, instead of three
-separate workflow files/runs. A single `publish` job waits on all three legs and uploads
+Every feedstock uses `scripts/templates/autoupload.yml`: both architectures build as one
+GitHub Actions run with a 2-leg matrix (`build (amd64, ubuntu-24.04, linux)`,
+`build (arm64, ubuntu-24.04-arm, linux)`) — they run in parallel and show up as two
+branches in the same run graph. A single `publish` job waits on both legs and uploads
 every `.conda` it collects in one pass.
 
-Feedstocks not yet migrated still use the older `autoupload.amd64.yml` +
-`autoupload.arm64.yml` pair (Linux only, two separate workflow runs).
-`make rerun` / `scripts/rerun_tags.sh` and `make status` / `scripts/feedstock_status.sh`
-both detect which scheme a feedstock is on and behave accordingly.
+There is deliberately **no macOS leg**: Docker on Apple Silicon runs linux-arm64
+containers natively (no emulation), so the linux-arm64 packages already cover Macs at
+full speed. The recipes stay Darwin-compatible anyway (portable `nproc`, gnuconfig
+`config.sub`/`config.guess` refresh, Clang/libc++ patches) since linux-arm64 exercises
+most of the same paths; `scripts/add_macos_arm64.sh` / `scripts/remove_macos_arm64.sh`
+can re-add or re-remove the macOS leg across all feedstocks if that call ever changes.
 
-To migrate a feedstock:
+Recipe fixes only take effect on rebuilds that check out a ref containing them:
+`make rerun-all` dispatches every feedstock on its default branch (current recipe,
+`.dev`-suffixed version) — the way to validate a cross-cutting fix. `make rerun
+FEEDSTOCK=x` dispatches at the latest tag, i.e. the recipe *as of the tag*; if the
+recipe changed since tagging, move the tag to current HEAD first or the old recipe
+gets rebuilt.
 
-```bash
-make add-macos FEEDSTOCK=fastjet-feedstock   # writes autoupload.yml, drops the amd64/arm64 pair,
-                                              # adds osx_arm64 to conda-forge.yml
-cd feedstocks/fastjet-feedstock
-git diff                                     # review
-git add -A && git commit -m "ci: add macos-arm64" && git push
-```
+### README generation
 
-A real macOS build can surface package-specific issues conda-forge's Linux builds never hit
-— e.g. `nproc` doesn't exist on macOS (`sysctl -n hw.ncpu` does), and
-`conda_build_config.yaml` compiler pins gated with `# [linux]` need their `zip_keys` group
-gated the same way or the variant solver errors out on osx. See the commit history of
-[`feedstocks/cubature-feedstock`](https://github.com/hep-forge/cubature-feedstock) for a
-worked example of both the CI migration and the recipe fixes it needed.
+`conda smithy rerender` normally writes a conda-forge-flavored `README.md` into each
+feedstock (badges and links pointing at conda-forge, where these packages don't exist).
+Two mechanisms keep hep-forge READMEs in place:
+
+1. every feedstock's `conda-forge.yml` sets `skip_render: [README.md]`, so rerenders
+   don't touch the README at all;
+2. `make render` / `make readme` regenerate it from `recipe/meta.yaml` via
+   `scripts/generate_readme.py` (badges, install command, and links all point at
+   hep-forge).
 
 ### Multiple concurrent version lines
 
