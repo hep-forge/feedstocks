@@ -26,13 +26,13 @@ is the feedstock's release tag; "Published" is what anaconda.org actually serves
 with per-architecture availability.
 
 <!-- status:begin -->
-_Last refreshed: 2026-07-04 (`python3 scripts/update_readme_status.py`)_
+_Last refreshed: 2026-07-03 (`python3 scripts/update_readme_status.py`)_
 
 | Feedstock | Latest tag | Published | amd64 | arm64 |
 |-----------|------------|-----------|-------|-------|
-| [apfel](https://github.com/hep-forge/apfel-feedstock) | `3.1.1` | [`3.1.1`](https://anaconda.org/hep-forge/apfel) | ✅ | ✅ |
+| [apfel](https://github.com/hep-forge/apfel-feedstock) | `—` | [`3.1.1` ⚠️](https://anaconda.org/hep-forge/apfel) | ✅ | ✅ |
 | [apfelgrid](https://github.com/hep-forge/apfelgrid-feedstock) | `1.0.1` | [`1.0.1`](https://anaconda.org/hep-forge/apfelgrid) | ✅ | ❌ |
-| [apfelxx](https://github.com/hep-forge/apfelxx-feedstock) | `4.8.0` | [`4.8.0`](https://anaconda.org/hep-forge/apfelxx) | ✅ | ✅ |
+| [apfelxx](https://github.com/hep-forge/apfelxx-feedstock) | `—` | [`4.8.0` ⚠️](https://anaconda.org/hep-forge/apfelxx) | ✅ | ✅ |
 | [applgrid](https://github.com/hep-forge/applgrid-feedstock) | `1.6.35` | [`1.6.35`](https://anaconda.org/hep-forge/applgrid) | ✅ | ❌ |
 | [cernlib](https://github.com/hep-forge/cernlib-feedstock) | `2024.09.16.0-free` | [`2024.09.16.0.free` ⚠️](https://anaconda.org/hep-forge/cernlib) | ✅ | ❌ |
 | [chaplin](https://github.com/hep-forge/chaplin-feedstock) | `1.2` | [`1.2`](https://anaconda.org/hep-forge/chaplin) | ✅ | ✅ |
@@ -44,7 +44,7 @@ _Last refreshed: 2026-07-04 (`python3 scripts/update_readme_status.py`)_
 | [djangoh](https://github.com/hep-forge/djangoh-feedstock) | `4.6.21` | [`4.6.21`](https://anaconda.org/hep-forge/djangoh) | ✅ | ✅ |
 | [dyturbo](https://github.com/hep-forge/dyturbo-feedstock) | `1.4.2` | [`1.4.2`](https://anaconda.org/hep-forge/dyturbo) | ✅ | ❌ |
 | [edm4hep](https://github.com/hep-forge/edm4hep-feedstock) | `1.0.0` | — | ❌ | ❌ |
-| [eko](https://github.com/hep-forge/eko-feedstock) | `0.14.6` | [`0.14.6`](https://anaconda.org/hep-forge/eko) | ✅ | ✅ |
+| [eko](https://github.com/hep-forge/eko-feedstock) | `0.8.5` | [`0.14.6` ⚠️](https://anaconda.org/hep-forge/eko) | ✅ | ✅ |
 | [escalade](https://github.com/hep-forge/escalade-feedstock) | `v9.08.26` | [`v9.08.26`](https://anaconda.org/hep-forge/escalade) | ✅ | ❌ |
 | [fastjet-contrib](https://github.com/hep-forge/fastjet-contrib-feedstock) | `1.056` | [`1.056`](https://anaconda.org/hep-forge/fastjet-contrib) | ✅ | ❌ |
 | [fastjet](https://github.com/hep-forge/fastjet-feedstock) | `3.5.1` | [`3.5.1`](https://anaconda.org/hep-forge/fastjet) | ✅ | ✅ |
@@ -52,7 +52,7 @@ _Last refreshed: 2026-07-04 (`python3 scripts/update_readme_status.py`)_
 | [frameformat](https://github.com/hep-forge/frameformat-feedstock) | `0.1` | [`0.1`](https://anaconda.org/hep-forge/frameformat) | ✅ | ❌ |
 | [framel](https://github.com/hep-forge/framel-feedstock) | `8.48.4` | [`8.48.4`](https://anaconda.org/hep-forge/framel) | ✅ | ✅ |
 | [hathor](https://github.com/hep-forge/hathor-feedstock) | `2.0` | [`2.0`](https://anaconda.org/hep-forge/hathor) | ✅ | ❌ |
-| [hell](https://github.com/hep-forge/hell-feedstock) | `3.1` | [`3.1`](https://anaconda.org/hep-forge/hell) | ✅ | ✅ |
+| [hell](https://github.com/hep-forge/hell-feedstock) | `—` | [`3.1` ⚠️](https://anaconda.org/hep-forge/hell) | ✅ | ✅ |
 | [hellx](https://github.com/hep-forge/hellx-feedstock) | `3.0` | [`3.0`](https://anaconda.org/hep-forge/hellx) | ✅ | ✅ |
 | [hepmc](https://github.com/hep-forge/hepmc-feedstock) | `3.3.0` | [`3.3.0`](https://anaconda.org/hep-forge/hepmc) | ✅ | ❌ |
 | [hoppet](https://github.com/hep-forge/hoppet-feedstock) | `2.2.0` | [`2.2.0`](https://anaconda.org/hep-forge/hoppet) | ✅ | ✅ |
@@ -62,7 +62,7 @@ _Last refreshed: 2026-07-04 (`python3 scripts/update_readme_status.py`)_
 | [lhapdf](https://github.com/hep-forge/lhapdf-feedstock) | `6.5.5` | [`6.5.5`](https://anaconda.org/hep-forge/lhapdf) | ✅ | ✅ |
 | [libdate-tz](https://github.com/hep-forge/libdate-tz-feedstock) | `—` | [`0.0.0.dev` ⚠️](https://anaconda.org/hep-forge/libdate-tz) | ✅ | ❌ |
 | [mcfm](https://github.com/hep-forge/mcfm-feedstock) | `10.3` | [`10.3`](https://anaconda.org/hep-forge/mcfm) | ✅ | ❌ |
-| [minio-cpp](https://github.com/hep-forge/minio-cpp-feedstock) | `0.3.0` | [`0.3.0`](https://anaconda.org/hep-forge/minio-cpp) | ✅ | ❌ |
+| [minio-cpp](https://github.com/hep-forge/minio-cpp-feedstock) | `0.3.0.1` | [`0.3.0` ⚠️](https://anaconda.org/hep-forge/minio-cpp) | ✅ | ❌ |
 | [nlojetxx](https://github.com/hep-forge/nlojetxx-feedstock) | `4.1.3` | [`4.1.3`](https://anaconda.org/hep-forge/nlojetxx) | ✅ | ✅ |
 | [nnlojet](https://github.com/hep-forge/nnlojet-feedstock) | `1.0.0` | [`1.0.0`](https://anaconda.org/hep-forge/nnlojet) | ✅ | ❌ |
 | [nnpdf](https://github.com/hep-forge/nnpdf-feedstock) | `4.0.9` | [`4.0.9`](https://anaconda.org/hep-forge/nnpdf) | ✅ | ✅ |
@@ -73,7 +73,7 @@ _Last refreshed: 2026-07-04 (`python3 scripts/update_readme_status.py`)_
 | [pythia](https://github.com/hep-forge/pythia-feedstock) | `8.3.12` | [`8.3.12`](https://anaconda.org/hep-forge/pythia) | ✅ | ✅ |
 | [qcdloop](https://github.com/hep-forge/qcdloop-feedstock) | `2.0.9` | [`2.0.9`](https://anaconda.org/hep-forge/qcdloop) | ✅ | ❌ |
 | [qcdnum](https://github.com/hep-forge/qcdnum-feedstock) | `18.00.00` | [`18.00.00`](https://anaconda.org/hep-forge/qcdnum) | ✅ | ✅ |
-| [rapgap](https://github.com/hep-forge/rapgap-feedstock) | `3.310` | [`3.310`](https://anaconda.org/hep-forge/rapgap) | ✅ | ❌ |
+| [rapgap](https://github.com/hep-forge/rapgap-feedstock) | `3.4.0` | [`3.310` ⚠️](https://anaconda.org/hep-forge/rapgap) | ✅ | ❌ |
 | [rh5](https://github.com/hep-forge/rh5-feedstock) | `0.1` | [`0.1`](https://anaconda.org/hep-forge/rh5) | ✅ | ❌ |
 | [rivet](https://github.com/hep-forge/rivet-feedstock) | `4.1.0` | [`4.1.0`](https://anaconda.org/hep-forge/rivet) | ✅ | ❌ |
 | [rkafka](https://github.com/hep-forge/rkafka-feedstock) | `0.1` | [`0.1`](https://anaconda.org/hep-forge/rkafka) | ✅ | ❌ |
