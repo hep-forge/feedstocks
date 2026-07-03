@@ -4,9 +4,14 @@
 #   - Root level  (feedstocks/ dir present):  targets operate on ALL feedstocks
 #   - Feedstock   (recipe/ dir present):       targets operate on THIS feedstock
 #
+# Any target below that takes a package name accepts it two ways —
+# `make inspect root` and `make inspect FEEDSTOCK=root` are identical.
+# The name is always the bare package name, never the "<name>-feedstock"
+# repo/directory name (scripts strip or add that suffix themselves).
+#
 # Meta-repo usage:
 #   make forge          Install conda-smithy + tools
-#   make render         Rerender all feedstocks (or: make render FEEDSTOCK=fastjet-feedstock)
+#   make render [<name>]     Rerender all feedstocks, or just one
 #                       one PASS/FAIL line per feedstock; full logs in .render-logs/
 #   make render-retry   Re-run only the feedstocks that failed the last render
 #   make readme         Regenerate all README.md files (hep-forge badges/links)
@@ -14,20 +19,21 @@
 #   make anaconda       Upload all built packages to hep-forge channel
 #   make bot-check      Dry-run upstream version check (hep-bot)
 #   make distribute     Copy this Makefile into every feedstock
-#   make debug FEEDSTOCK=<name>  Debug one feedstock build
-#   make status          Tags/branches + last AMD64/ARM64 build dates
-#   make ci-status       Latest workflow run per feedstock (PASS/FAIL/RUNNING + link)
-#   make ci-status FEEDSTOCK=<name>  Same, one feedstock
-#   make arch-status     Latest run per feedstock split by job: amd64 | arm64 | publish
-#   make arch-status FEEDSTOCK=<name>  Same, one feedstock
-#   make retag FEEDSTOCK=<name>  Move latest tag to branch tip + push -> fires the tag build
+#   make debug <name>   Debug one feedstock build
+#   make status [<name>]     Tags/branches + last AMD64/ARM64 build dates
+#   make ci-status [<name>]  Latest workflow run per feedstock (PASS/FAIL/RUNNING + link)
+#   make arch-status [<name>]  Latest run per feedstock split by job: amd64 | arm64 | publish
+#   make arch-status ARGS=--failed  Same, only rows with a red leg
+#                       (must be ARGS=..., not a bare --failed: make itself
+#                       intercepts any --flag-looking word on its command line)
+#   make retag <name>   Move latest tag to branch tip + push -> fires the tag build
 #   make retag-all       Same for every feedstock (the rebuild mechanism under tag-only CI)
 #   make readme-status   Refresh the feedstock status table in README.md from anaconda.org
-#   make inspect FEEDSTOCK=<name>  Deep-dive one package: published versions per arch,
+#   make inspect <name>  Deep-dive one package: published versions per arch,
 #                        GitHub tags + sync verdict, latest runs, error log on failure
-#   make rerun FEEDSTOCK=<name>    Rebuild one feedstock at its latest tag (real release)
+#   make rerun <name>    Rebuild one feedstock at its latest tag (real release)
 #   make rerun-all       Rebuild ALL feedstocks on their default branch (".dev" validation builds)
-#   make add-macos FEEDSTOCK=<name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
+#   make add-macos <name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
 #   make add-macos-all   Migrate every feedstock not yet on the unified workflow
 #   make variant-bump KEY=<name> VERSION=<value>  Roll a new version of any variant key out to consumers, trim to newest 2
 #   make variant-trim KEY=<name>  Cap consumers' <name>: lists at the newest 2, no new version
@@ -51,6 +57,21 @@ ifeq ($(IS_META),1)
 # ─────────────────────────────────────────────────────────────────────────────
 
 .PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status arch-status retag retag-all readme-status inspect rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
+
+# Positional shorthand: "make <target> <arg>" behaves like
+# "make <target> FEEDSTOCK=<arg>" for every target below that takes a
+# package name. (arch-status's --failed flag flows through the same way
+# since it's passed straight to the script either way.) A plain
+# "make <target>" with no extra word is untouched -- FEEDSTOCK stays
+# unset and targets fall back to their "operate on everything" mode.
+PKG_TARGETS := render debug status ci-status arch-status retag inspect rerun add-macos
+ifneq (,$(filter $(firstword $(MAKECMDGOALS)),$(PKG_TARGETS)))
+  PKG_ARG := $(word 2,$(MAKECMDGOALS))
+  ifneq ($(PKG_ARG),)
+    FEEDSTOCK := $(PKG_ARG)
+    $(eval $(PKG_ARG):;@:)
+  endif
+endif
 
 all: forge render readme
 
@@ -123,7 +144,7 @@ endif
 # at an old tag fails: the workflow file at that ref predates the trigger).
 retag:
 ifndef FEEDSTOCK
-	$(error Usage: make retag FEEDSTOCK=<feedstock-name>   (e.g. make retag FEEDSTOCK=fastjet))
+	$(error Usage: make retag <name>   (e.g. make retag fastjet))
 endif
 	@bash scripts/retag_all.sh $(FEEDSTOCK)
 
@@ -140,16 +161,16 @@ readme-status:
 # runs with per-job results, and error lines from failed jobs.
 inspect:
 ifndef FEEDSTOCK
-	$(error Usage: make inspect FEEDSTOCK=<name>   (e.g. make inspect FEEDSTOCK=pythia))
+	$(error Usage: make inspect <name>   (e.g. make inspect pythia))
 endif
 	@bash scripts/inspect_feedstock.sh $(FEEDSTOCK)
 
-# Trigger a rebuild at the latest tag — FEEDSTOCK= is required to prevent flooding runners
+# Trigger a rebuild at the latest tag — a package name is required to prevent flooding runners
 # Builds amd64 + linux-arm64 in parallel (one dispatch) for feedstocks on
 # the unified autoupload.yml workflow. Uses the recipe AS OF THE TAG.
 rerun:
 ifndef FEEDSTOCK
-	$(error Usage: make rerun FEEDSTOCK=<feedstock-name>   (e.g. make rerun FEEDSTOCK=fastjet-feedstock))
+	$(error Usage: make rerun <name>   (e.g. make rerun fastjet))
 endif
 	@bash scripts/rerun_tags.sh $(FEEDSTOCK)
 
@@ -161,10 +182,10 @@ rerun-all:
 
 # Migrate one feedstock's CI from separate amd64/arm64 workflows to the
 # unified amd64 + linux-arm64 + macos-arm64 matrix workflow.
-# FEEDSTOCK= is required (see scripts/add_macos_arm64.sh for details).
+# A package name is required (see scripts/add_macos_arm64.sh for details).
 add-macos:
 ifndef FEEDSTOCK
-	$(error Usage: make add-macos FEEDSTOCK=<feedstock-name>   (e.g. make add-macos FEEDSTOCK=fastjet-feedstock))
+	$(error Usage: make add-macos <name>   (e.g. make add-macos fastjet))
 endif
 	@bash scripts/add_macos_arm64.sh $(FEEDSTOCK)
 
@@ -222,9 +243,10 @@ distribute:
 
 debug:
 ifndef FEEDSTOCK
-	$(error Usage: make debug FEEDSTOCK=<feedstock-name>)
+	$(error Usage: make debug <name>   (e.g. make debug fastjet))
 endif
-	@cd feedstocks/$(FEEDSTOCK) && \
+	@REPO="$(FEEDSTOCK)"; case "$$REPO" in *-feedstock) ;; *) REPO="$$REPO-feedstock" ;; esac; \
+	cd "feedstocks/$$REPO" && \
 	OUTPUT_ID=$$(conda render . --output 2>&1 \
 	    | grep -E '\.(tar\.bz2|conda)$$' | sort | tail -1 | xargs -r basename); \
 	if [ -n "$$OUTPUT_ID" ]; then \

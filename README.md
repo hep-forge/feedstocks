@@ -139,31 +139,48 @@ hep-feedstocks/
 
 The same `Makefile` works at the meta-repo root and inside any individual feedstock (it auto-detects context).
 
+Any target that takes a package name accepts it as a **bare word right after the
+target** — `make inspect root` — which is exactly equivalent to the longer
+`make inspect FEEDSTOCK=root`. Either form works everywhere below; the name is
+always the bare package name (`root`), never the repo/directory name
+(`root-feedstock`) — scripts add or strip that suffix themselves. The one
+exception is a flag like `--failed`, which `make` itself intercepts as its own
+command-line option, so that one still needs `ARGS="--failed"`.
+
 ### Meta-repo level
 
 ```bash
 make forge        # Install conda-smithy, conda-verify, anaconda-client
 make render       # Rerender all feedstocks (conda smithy rerender)
-make render FEEDSTOCK=fastjet-feedstock  # Rerender one feedstock
+make render fastjet                      # Rerender one feedstock
 make readme       # Regenerate all README.md files pointed at hep-forge
 make list         # List all locally built .conda packages
 make anaconda     # Upload all built packages to the hep-forge channel
 make bot-check    # Dry-run upstream version check (hep-bot)
 make status       # Table: feedstock | tags | branches (=labels) | last successful build dates
-make status FEEDSTOCK=rivet-feedstock    # Status for one feedstock
+make status rivet                        # Status for one feedstock
 make ci-status    # LATEST workflow run per feedstock: PASS/FAIL/RUNNING + link.
                   # Exits non-zero if anything failed — bot/cron friendly.
-make ci-status FEEDSTOCK=rivet-feedstock # Same, one feedstock
-make rerun FEEDSTOCK=fastjet-feedstock   # Rebuild one feedstock at its latest tag (recipe AS OF THE TAG)
+make ci-status rivet                     # Same, one feedstock
+make arch-status                         # Latest run per feedstock, split by job: amd64 | arm64 | publish
+make arch-status rivet                   # Same, one feedstock
+make arch-status ARGS="--failed"         # Only rows with a red leg
+make inspect pythia                      # Deep dive: published versions per arch, GitHub
+                  # tags + sync verdict, latest runs, error log on failure
+make retag fastjet                       # Move the latest tag to the branch tip + push
+                  # -> fires the tag build (THE rebuild mechanism under tag-only CI)
+make retag-all    # Same, every feedstock
+make readme-status  # Refresh the README status table below from anaconda.org
+make rerun fastjet                       # Rebuild one feedstock at its latest tag (recipe AS OF THE TAG)
 make rerun-all    # Rebuild ALL feedstocks on their default branch (current recipes,
                   # versions get a ".dev" suffix) — use to validate fixes end-to-end
 make distribute   # Copy this Makefile into every feedstock
-make debug FEEDSTOCK=fastjet-feedstock   # Debug one feedstock build
+make debug fastjet                       # Debug one feedstock build
 ```
 
 > `make status` only shows the last *successful* build dates — a feedstock
 > whose latest run failed still shows its old green date there. Use
-> `make ci-status` to see failures and in-progress runs.
+> `make ci-status` or `make arch-status` to see failures and in-progress runs.
 
 ### Per-feedstock level (after `make distribute` or `cd feedstocks/X && make`)
 
@@ -187,12 +204,13 @@ Manual runs from the Actions UI are allowed at a **tag ref** (full build + uploa
 **branch only with the `debug` input enabled** — debug builds produce artifacts but never
 upload to Anaconda.
 
-To trigger a rebuild: `make retag FEEDSTOCK=<name>` — it moves the feedstock's latest tag
+To trigger a rebuild: `make retag <name>` — it moves the feedstock's latest tag
 to the default-branch tip and force-pushes; the tag push fires the build with the current
 recipe. (Dispatching at an *old* tag fails with "No event triggers defined in `on`":
 `workflow_dispatch` reads the workflow file at the dispatched ref, which predates the
 trigger.) Watch progress per architecture with `make arch-status` (`ARGS="--failed"` for
-only the broken rows).
+only the broken rows), or get the full picture for one package — published versions per
+architecture, GitHub tags, and error details on failure — with `make inspect <name>`.
 
 ### amd64 + arm64 matrix workflow
 
@@ -210,7 +228,7 @@ most of the same paths; `scripts/add_macos_arm64.sh` / `scripts/remove_macos_arm
 can re-add or re-remove the macOS leg across all feedstocks if that call ever changes.
 
 Recipe fixes only take effect on rebuilds that check out a ref containing them:
-`make retag FEEDSTOCK=x` (or `make retag-all`) is the standard path — it rebuilds the
+`make retag x` (or `make retag-all`) is the standard path — it rebuilds the
 *current* recipe under the clean tag version. `make rerun-all` dispatches every feedstock
 on its default branch with `debug=true`: builds validate end-to-end but nothing is
 uploaded (versions carry a `.dev` suffix and the publish job skips non-tag refs).
