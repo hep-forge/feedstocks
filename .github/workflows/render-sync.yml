@@ -1,0 +1,58 @@
+name: Render & README Sync
+
+# Keeps the whole fleet consistent without manual steps:
+#   - every feedstock gets the current scripts/templates/autoupload.yml
+#   - every feedstock README is regenerated with hep-forge badges/links
+#     and per-architecture publication state
+#   - this repo's README.md status table (tag vs published per arch) is
+#     refreshed, and submodule pointers are bumped to the pushed commits
+#
+# Runs daily, on demand, and whenever the template/generators change.
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/templates/autoupload.yml
+      - scripts/generate_readme.py
+      - scripts/update_readme_status.py
+      - scripts/rerender_all.sh
+      - scripts/render_sync.sh
+
+permissions:
+  contents: write
+
+concurrency:
+  group: render-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout meta-repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.HEP_BOT_TOKEN }}
+
+      - name: Configure git identity and token auth
+        env:
+          HEP_BOT_TOKEN: ${{ secrets.HEP_BOT_TOKEN }}
+        run: |
+          git config --global user.name "hep-bot"
+          git config --global user.email "hep-bot@users.noreply.github.com"
+          # .gitmodules uses SSH remotes; rewrite to token-authenticated HTTPS
+          git config --global url."https://x-access-token:${HEP_BOT_TOKEN}@github.com/".insteadOf "git@github.com:"
+          git config --global url."https://x-access-token:${HEP_BOT_TOKEN}@github.com/".insteadOf --add "https://github.com/"
+
+      - name: Checkout feedstock submodules
+        run: git submodule update --init --depth 1
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Render, push feedstocks, refresh README
+        run: bash scripts/render_sync.sh --commit

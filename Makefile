@@ -18,6 +18,11 @@
 #   make status          Tags/branches + last AMD64/ARM64 build dates
 #   make ci-status       Latest workflow run per feedstock (PASS/FAIL/RUNNING + link)
 #   make ci-status FEEDSTOCK=<name>  Same, one feedstock
+#   make arch-status     Latest run per feedstock split by job: amd64 | arm64 | publish
+#   make arch-status FEEDSTOCK=<name>  Same, one feedstock
+#   make retag FEEDSTOCK=<name>  Move latest tag to branch tip + push -> fires the tag build
+#   make retag-all       Same for every feedstock (the rebuild mechanism under tag-only CI)
+#   make readme-status   Refresh the feedstock status table in README.md from anaconda.org
 #   make rerun FEEDSTOCK=<name>    Rebuild one feedstock at its latest tag (real release)
 #   make rerun-all       Rebuild ALL feedstocks on their default branch (".dev" validation builds)
 #   make add-macos FEEDSTOCK=<name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
@@ -43,7 +48,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status arch-status retag retag-all readme-status rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
 
 all: forge render readme
 
@@ -101,6 +106,32 @@ ifdef FEEDSTOCK
 else
 	@bash scripts/ci_status.sh
 endif
+
+# Latest run per feedstock broken down by job (amd64 | arm64 | publish),
+# so you can see WHICH leg broke. --failed via ARGS="--failed".
+arch-status:
+ifdef FEEDSTOCK
+	@bash scripts/arch_status.sh $(FEEDSTOCK)
+else
+	@bash scripts/arch_status.sh $(ARGS)
+endif
+
+# Move the latest tag to the default-branch tip and force-push it; the tag
+# push fires the build. THE rebuild mechanism under tag-only CI (dispatch
+# at an old tag fails: the workflow file at that ref predates the trigger).
+retag:
+ifndef FEEDSTOCK
+	$(error Usage: make retag FEEDSTOCK=<feedstock-name>   (e.g. make retag FEEDSTOCK=fastjet))
+endif
+	@bash scripts/retag_all.sh $(FEEDSTOCK)
+
+retag-all:
+	@bash scripts/retag_all.sh
+
+# Refresh the feedstock status table in README.md (latest tag vs published
+# version + per-arch state from anaconda.org). Run AFTER builds finish.
+readme-status:
+	@python3 scripts/update_readme_status.py
 
 # Trigger a rebuild at the latest tag — FEEDSTOCK= is required to prevent flooding runners
 # Builds amd64 + linux-arm64 in parallel (one dispatch) for feedstocks on

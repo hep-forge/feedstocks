@@ -78,7 +78,11 @@ for i in "${!TARGETS[@]}"; do
   # channels, links); replace it with the hep-forge one. skip_render in
   # conda-forge.yml stops smithy from writing it at all, but regenerate
   # unconditionally so pre-skip_render feedstocks converge too.
+  # The CI workflow is part of the render as well: every render leaves the
+  # feedstock on the current scripts/templates/autoupload.yml.
   if [ "$status" -eq 0 ]; then
+    mkdir -p "$dir/.github/workflows"
+    cp scripts/templates/autoupload.yml "$dir/.github/workflows/autoupload.yml" || status=$?
     python3 scripts/generate_readme.py "$dir" hep-forge >> "$log" 2>&1 || status=$?
   fi
 

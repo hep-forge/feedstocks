@@ -51,12 +51,16 @@ done
 
 trigger() {
   local repo="$1" ref="$2" workflow="$3"
+  # Branch dispatches are gated in autoupload.yml (tag-only policy) and
+  # must opt in via the debug input; tag dispatches need no input.
+  local extra=()
+  [ "$MAIN_MODE" -eq 1 ] && [ "$workflow" = "autoupload.yml" ] && extra=(-f debug=true)
   if [ "$DRY_RUN" -eq 1 ]; then
-    printf "  [dry-run] gh workflow run %-30s --repo %s/%s --ref %s\n" \
-      "$workflow" "$ORG" "$repo" "$ref"
+    printf "  [dry-run] gh workflow run %-30s --repo %s/%s --ref %s %s\n" \
+      "$workflow" "$ORG" "$repo" "$ref" "${extra[*]:-}"
   else
     printf "  → %-30s @ %s\n" "$workflow" "$ref"
-    gh workflow run "$workflow" --repo "$ORG/$repo" --ref "$ref" 2>&1 \
+    gh workflow run "$workflow" --repo "$ORG/$repo" --ref "$ref" "${extra[@]}" 2>&1 \
       || echo "  WARNING: failed to trigger $workflow for $repo"
     sleep "$DELAY"
   fi
