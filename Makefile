@@ -23,6 +23,8 @@
 #   make retag FEEDSTOCK=<name>  Move latest tag to branch tip + push -> fires the tag build
 #   make retag-all       Same for every feedstock (the rebuild mechanism under tag-only CI)
 #   make readme-status   Refresh the feedstock status table in README.md from anaconda.org
+#   make inspect FEEDSTOCK=<name>  Deep-dive one package: published versions per arch,
+#                        GitHub tags + sync verdict, latest runs, error log on failure
 #   make rerun FEEDSTOCK=<name>    Rebuild one feedstock at its latest tag (real release)
 #   make rerun-all       Rebuild ALL feedstocks on their default branch (".dev" validation builds)
 #   make add-macos FEEDSTOCK=<name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
@@ -48,7 +50,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status arch-status retag retag-all readme-status rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status arch-status retag retag-all readme-status inspect rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
 
 all: forge render readme
 
@@ -132,6 +134,15 @@ retag-all:
 # version + per-arch state from anaconda.org). Run AFTER builds finish.
 readme-status:
 	@python3 scripts/update_readme_status.py
+
+# Everything about ONE package in a single view: anaconda versions per
+# arch, GitHub tags with a tag<->published sync verdict, recent workflow
+# runs with per-job results, and error lines from failed jobs.
+inspect:
+ifndef FEEDSTOCK
+	$(error Usage: make inspect FEEDSTOCK=<name>   (e.g. make inspect FEEDSTOCK=pythia))
+endif
+	@bash scripts/inspect_feedstock.sh $(FEEDSTOCK)
 
 # Trigger a rebuild at the latest tag — FEEDSTOCK= is required to prevent flooding runners
 # Builds amd64 + linux-arm64 in parallel (one dispatch) for feedstocks on
