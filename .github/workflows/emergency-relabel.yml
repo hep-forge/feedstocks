@@ -1,0 +1,96 @@
+name: EMERGENCY Relabel Orphaned Files
+
+# One-off repair for a bug in channel-maintenance.yml's first real run:
+# `anaconda label --copy master main` failed silently (client swallowed
+# the real error) while the paired `--remove master` succeeded, leaving
+# every file that was ONLY under `master` with ZERO labels -- invisible
+# to `-c hep-forge`, worse off than before the migration.
+#
+# This calls the raw REST API directly (POST /channels/{owner}/main
+# with package/version/basename in the body -- the same request
+# binstar_client's add_channel() makes) for the exact 23 files found
+# orphaned by a full-channel scan, bypassing the buggy CLI entirely.
+#
+# Delete this workflow file once it has run successfully once.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only print the plan, POST nothing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  relabel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-add main label to orphaned files
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          python3 <<'PYEOF'
+          import json, os, urllib.request
+
+          ORG = "hep-forge"
+          TOKEN = os.environ["ANACONDA_API_TOKEN"]
+          DRY = os.environ["DRY_RUN"] == "true"
+
+          ORPHANED = [
+              ("apfel", "3.1.1", "linux-64/apfel-3.1.1-py312h74be60c_0.conda"),
+              ("apfel", "3.1.1", "linux-aarch64/apfel-3.1.1-py312hb400fcb_0.conda"),
+              ("apfelxx", "4.8.0", "linux-64/apfelxx-4.8.0-py312h74be60c_0.conda"),
+              ("apfelxx", "4.8.0", "linux-aarch64/apfelxx-4.8.0-py312hb400fcb_0.conda"),
+              ("dyturbo", "1.4.2", "linux-64/dyturbo-1.4.2-h74be60c_0.conda"),
+              ("eko", "0.14.6", "noarch/eko-0.14.6-py_0.conda"),
+              ("hell", "3.1", "linux-64/hell-3.1-h74be60c_0.conda"),
+              ("hell", "3.1", "linux-aarch64/hell-3.1-hb400fcb_0.conda"),
+              ("hellx", "3.0", "linux-64/hellx-3.0-h74be60c_0.conda"),
+              ("hellx", "3.0", "linux-aarch64/hellx-3.0-hb400fcb_0.conda"),
+              ("hoppet", "2.2.0", "linux-64/hoppet-2.2.0-h74be60c_0.conda"),
+              ("hoppet", "2.2.0", "linux-aarch64/hoppet-2.2.0-hb400fcb_0.conda"),
+              ("pineappl", "0.8.6", "linux-64/pineappl-0.8.6-py310h74be60c_0.conda"),
+              ("pineappl", "0.8.6", "linux-64/pineappl-0.8.6-py311h74be60c_0.conda"),
+              ("pineappl", "0.8.6", "linux-64/pineappl-0.8.6-py312h74be60c_0.conda"),
+              ("pineappl", "0.8.6", "linux-64/pineappl-0.8.6-py39h74be60c_0.conda"),
+              ("pineappl", "0.8.6", "linux-aarch64/pineappl-0.8.6-py310hb400fcb_0.conda"),
+              ("pineappl", "0.8.6", "linux-aarch64/pineappl-0.8.6-py311hb400fcb_0.conda"),
+              ("pineappl", "0.8.6", "linux-aarch64/pineappl-0.8.6-py312hb400fcb_0.conda"),
+              ("pineappl", "0.8.6", "linux-aarch64/pineappl-0.8.6-py39hb400fcb_0.conda"),
+              ("ploughshare", "0.0.20", "linux-64/ploughshare-0.0.20-h74be60c_0.conda"),
+              ("ploughshare", "0.0.20", "linux-aarch64/ploughshare-0.0.20-hb400fcb_0.conda"),
+              ("yadism", "0.12.5", "noarch/yadism-0.12.5-py_0.conda"),
+          ]
+
+          def check_labels(pkg):
+              url = f"https://api.anaconda.org/package/{ORG}/{pkg}"
+              with urllib.request.urlopen(url, timeout=20) as r:
+                  return json.load(r)
+
+          for pkg, version, basename in ORPHANED:
+              body = json.dumps({"package": pkg, "version": version, "basename": basename}).encode()
+              url = f"https://api.anaconda.org/channels/{ORG}/main"
+              if DRY:
+                  print(f"[dry-run] POST {url} {body.decode()}")
+                  continue
+              req = urllib.request.Request(url, data=body, method="POST", headers={
+                  "Authorization": f"token {TOKEN}",
+                  "Content-Type": "application/json",
+              })
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      print(f"OK ({r.status}) {pkg}/{version}/{basename}")
+              except urllib.error.HTTPError as e:
+                  print(f"FAILED ({e.code}) {pkg}/{version}/{basename}: {e.read().decode()}")
+
+          if not DRY:
+              print("\nVerifying:")
+              for pkg in sorted({p for p, _, _ in ORPHANED}):
+                  data = check_labels(pkg)
+                  for f in data.get("files", []):
+                      print(f"  {pkg} {f.get('version')} {f.get('basename')}: {f.get('labels')}")
+          PYEOF
