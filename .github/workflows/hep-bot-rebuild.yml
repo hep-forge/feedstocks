@@ -111,10 +111,10 @@ jobs:
               return (numeric or tags or [None])[0]
 
           def trigger(repo, workflow, since, ref):
-              result = subprocess.run(
-                  ["gh", "workflow", "run", workflow, "--repo", repo, "--ref", ref],
-                  capture_output=True, text=True,
-              )
+              cmd = ["gh", "workflow", "run", workflow, "--repo", repo, "--ref", ref]
+              if workflow == "autoupload.yml":
+                  cmd += ["-f", "triggered_by=bot"]
+              result = subprocess.run(cmd, capture_output=True, text=True)
               if result.returncode != 0:
                   print(f"  WARNING: failed to trigger {workflow} for {repo}: {result.stderr.strip()}")
                   return None

@@ -54,7 +54,7 @@ cell() {
 }
 
 printf "${BOLD}${CYAN}%-28s %-9s %-9s %-9s %-19s %-17s %s${RESET}\n" \
-  "FEEDSTOCK" "AMD64" "ARM64" "PUBLISH" "EVENT@REF" "STARTED" "RUN"
+  "FEEDSTOCK" "AMD64" "ARM64" "PUBLISH" "TRIGGER@REF" "STARTED" "RUN"
 printf "${DIM}%0.s-" {1..120}
 printf "${RESET}\n"
 
@@ -84,20 +84,36 @@ for dir in feedstocks/*-feedstock; do
   started="${started:0:16}"
   url="https://github.com/$ORG/$repo/actions/runs/$run_id"
 
-  # Per-job conclusions of that run (empty conclusion = still running)
+  # Per-job conclusions of that run (empty conclusion = still running),
+  # plus each job's step names (4th field) -- the env job's "Triggered
+  # by: manual/bot" step is how we tell a human dispatch apart from
+  # hep-bot-rebuild.yml (GitHub's API has no field for that otherwise;
+  # both are just event=workflow_dispatch from whichever token fired it).
   jobs=$(gh api "repos/$ORG/$repo/actions/runs/$run_id/jobs?per_page=30" \
-    --jq '.jobs[] | "\(.name)\t\(.status)\t\(.conclusion)"' 2>/dev/null || true)
+    --jq '.jobs[] | "\(.name)\t\(.status)\t\(.conclusion)\t" + ([.steps[]?.name] | join(";"))' \
+    2>/dev/null || true)
 
-  amd64="" arm64="" publish=""
-  while IFS=$'\t' read -r jname jstatus jconc; do
+  amd64="" arm64="" publish="" trigger_src=""
+  while IFS=$'\t' read -r jname jstatus jconc jsteps; do
     [ -z "$jname" ] && continue
     [ "$jstatus" != "completed" ] && { jconc="running"; ANY_RUNNING=1; }
     case "$jname" in
       *amd64*)   amd64="$jconc" ;;
       *arm64*)   arm64="$jconc" ;;
       publish*)  publish="$jconc" ;;
+      env)
+        [[ "$jsteps" =~ Triggered\ by:\ ([a-z]+) ]] && trigger_src="${BASH_REMATCH[1]}"
+        ;;
     esac
   done <<< "$jobs"
+
+  # push events need no self-declaration; workflow_dispatch runs predating
+  # this feature (no matching step found) fall back to "manual".
+  case "$event" in
+    push)             trigger_src="push" ;;
+    workflow_dispatch) trigger_src="${trigger_src:-manual}" ;;
+    *)                trigger_src="${trigger_src:-$event}" ;;
+  esac
 
   row_failed=0
   for c in "$amd64" "$arm64" "$publish"; do
@@ -112,7 +128,7 @@ for dir in feedstocks/*-feedstock; do
   cell "$amd64"; printf " "
   cell "$arm64"; printf " "
   cell "$publish"; printf " "
-  printf "%-19s %-17s\n" "${event}@${ref}" "$started"
+  printf "%-19s %-17s\n" "${trigger_src}@${ref}" "$started"
   # Run URL on its own line, indented to the AMD64 column -- the full
   # row otherwise overflows narrow terminals and wraps unreadably.
   printf "%-29s${DIM}%s${RESET}\n" "" "$url"
