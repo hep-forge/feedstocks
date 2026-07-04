@@ -256,12 +256,22 @@ jobs:
           # Dedupe by subdir/filename: noarch packages are built
           # identically by both legs and must be uploaded once.
           declare -A SEEN
+          UPLOADED=0
           for CONDA in $(find pkgs-all -name "*.conda" | sort); do
             KEY="$(basename "$(dirname "$CONDA")")/$(basename "$CONDA")"
             [ -n "${SEEN[$KEY]:-}" ] && { echo "Skipping duplicate $KEY"; continue; }
             SEEN[$KEY]=1
             /usr/share/miniconda/bin/anaconda -t $ANACONDA_API_TOKEN upload --force "$CONDA" --label "$ANACONDA_LABEL"
+            UPLOADED=$((UPLOADED + 1))
           done
+          # Both build legs failing leaves download-artifact (continue-on-error)
+          # with nothing, so this loop silently iterates zero times -- without
+          # this check the step (and the whole publish job) reports a
+          # misleading "success" despite publishing nothing.
+          if [ "$UPLOADED" -eq 0 ]; then
+            echo "::error::No .conda packages found to upload -- both build legs must have failed."
+            exit 1
+          fi
 
       # anaconda.org free tier has limited storage: after each release,
       # delete this package's old versions. Kept are (a) the newest
