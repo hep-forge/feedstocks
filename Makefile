@@ -32,6 +32,10 @@
 #   make readme-status   Refresh the feedstock status table in README.md from anaconda.org
 #   make inspect <name>  Deep-dive one package: published versions per arch,
 #                        GitHub tags + sync verdict, latest runs, error log on failure
+#   make doctor <name>   Diagnose BEFORE retagging: hep-forge dependencies actually
+#                        published on every arch this package builds for, this
+#                        recipe's own root:/libtorch: variant matrix cross-checked
+#                        per-arch, tag-vs-main freshness, then everything `inspect` shows
 #   make rerun <name>    Rebuild one feedstock at its latest tag (real release)
 #   make rerun-all       Rebuild ALL feedstocks at their latest tags (no branch/dev builds)
 #   make add-macos <name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
@@ -57,7 +61,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status arch retag retag-all readme-status inspect rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status arch retag retag-all readme-status inspect doctor rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
 
 # Positional shorthand: "make <target> <arg>" behaves like
 # "make <target> FEEDSTOCK=<arg>" for every target below that takes a
@@ -65,7 +69,7 @@ ifeq ($(IS_META),1)
 # since it's passed straight to the script either way.) A plain
 # "make <target>" with no extra word is untouched -- FEEDSTOCK stays
 # unset and targets fall back to their "operate on everything" mode.
-PKG_TARGETS := render debug status ci-status arch retag inspect rerun add-macos
+PKG_TARGETS := render debug status ci-status arch retag inspect doctor rerun add-macos
 ifneq (,$(filter $(firstword $(MAKECMDGOALS)),$(PKG_TARGETS)))
   PKG_ARG := $(word 2,$(MAKECMDGOALS))
   ifneq ($(PKG_ARG),)

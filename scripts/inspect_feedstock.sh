@@ -127,19 +127,29 @@ if [ -n "$RUN_ID" ]; then
   echo "  https://github.com/$ORG/$REPO/actions/runs/$RUN_ID"
   hr
 
-  # ---------- 4. failure details ---------------------------------------------
+  # ---------- 4. failure details: last 20 raw lines PER FAILED JOB -----------
+  # Keyword-grepping the merged log (the old approach here) repeatedly
+  # missed the actual root cause this session -- a test failure, a
+  # linker error, a solver explanation -- because the failure text
+  # doesn't always contain one of the greppable keywords, or the
+  # keyword line lacks the context above it that explains WHY. Tailing
+  # each job's own raw log, separately, is more reliable and is what
+  # actually got used for diagnosis every time.
   if [ "$FAILED_RUN" -eq 1 ]; then
-    printf "${BOLD}${RED}== error lines from failed jobs ==${RESET}\n"
-    gh run view "$RUN_ID" --repo "$ORG/$REPO" --log-failed 2>/dev/null \
-      | grep -aE "(CondaBuildUserError|BuildScriptException|ExplainedDependencyNeedsBuildingError|RuntimeError|ModuleNotFoundError|CMake Error|configure: error|Unsatisfiable dependencies|[Ee]rror:|##\[error\]|fatal:|FAILED)" \
-      | grep -avE "error_upload_url|# too new for" \
-      | sed -E 's/\x1b\[[0-9;]*m//g;
-                s/^([^\t]*)\t[^\t]*\t[0-9T:.Z-]+ /[\1] /;
-                s|/[^ ]*conda-bld/[^ ]*_h_env_placehold[^/]*/|\$PREFIX/|g;
-                s|/[^ ]*conda-bld/([^/ ]+)/work/|\$SRC_DIR(\1)/|g' \
-      | awk '!seen[$0]++' \
-      | head -25
-    echo ""
+    printf "${BOLD}${RED}== last 20 lines per failed job (amd64/arm64/publish) ==${RESET}\n"
+    RAW=$(gh run view "$RUN_ID" --repo "$ORG/$REPO" --log-failed 2>/dev/null)
+    JOBS=$(printf "%s\n" "$RAW" | awk -F'\t' '!seen[$1]++ {print $1}')
+    while IFS= read -r job; do
+      [ -z "$job" ] && continue
+      printf -- "${BOLD}--- %s ---${RESET}\n" "$job"
+      printf "%s\n" "$RAW" | awk -F'\t' -v j="$job" 'BEGIN{OFS="\t"} $1==j' \
+        | sed -E 's/\x1b\[[0-9;]*m//g;
+                  s/^[^\t]*\t[^\t]*\t[0-9T:.Z-]+ /  /;
+                  s|/[^ ]*conda-bld/[^ ]*_h_env_placehold[^/]*/|\$PREFIX/|g;
+                  s|/[^ ]*conda-bld/([^/ ]+)/work/|\$SRC_DIR(\1)/|g' \
+        | tail -20
+      echo ""
+    done <<< "$JOBS"
     printf "${DIM}full log: gh run view %s --repo %s/%s --log-failed | less${RESET}\n" "$RUN_ID" "$ORG" "$REPO"
   fi
 fi
