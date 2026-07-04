@@ -9,9 +9,19 @@
 #   legacy   - separate autoupload.amd64.yml / autoupload.arm64.yml, no macOS
 #              build yet ("n/a" in that column until migrated).
 #
+# The BRANCHES column reads local remote-tracking refs (git branch -r),
+# not a live GitHub query -- deliberately, to avoid a fetch per feedstock
+# (56 network round-trips) on every invocation. If a branch was deleted
+# upstream (e.g. via the GitHub API rather than a normal push/pull),
+# your local clone won't know until pruned -- it'll keep showing the
+# stale branch name forever. Run with --prune once after any upstream
+# branch deletion/rename to clean the cache; otherwise skip it.
+#
 # Usage:
 #   bash scripts/feedstock_status.sh
 #   bash scripts/feedstock_status.sh fastjet   # single feedstock
+#   bash scripts/feedstock_status.sh --prune   # also prune stale local
+#                                               # remote-tracking branches first
 #
 # Requires: gh CLI authenticated as a hep-forge org member
 
@@ -20,7 +30,14 @@ set -euo pipefail
 # piping into head/less and quitting, or an interrupted terminal.
 trap 'exit 0' PIPE
 
-FILTER="${1:-}"
+FILTER=""
+PRUNE=0
+for arg in "$@"; do
+  case "$arg" in
+    --prune) PRUNE=1 ;;
+    *)       FILTER="$arg" ;;
+  esac
+done
 ORG="hep-forge"
 
 cd "$(dirname "$0")/.."
@@ -54,6 +71,8 @@ for dir in feedstocks/*-feedstock; do
   if [ -n "$FILTER" ] && [ "$pkg" != "$FILTER" ] && [ "$repo" != "$FILTER" ]; then
     continue
   fi
+
+  [ "$PRUNE" -eq 1 ] && git -C "$dir" remote prune origin >/dev/null 2>&1
 
   # All tags sorted by version descending
   all_tags=$(git -C "$dir" tag --sort=-v:refname 2>/dev/null)

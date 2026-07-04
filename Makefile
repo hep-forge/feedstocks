@@ -21,6 +21,7 @@
 #   make distribute     Copy this Makefile into every feedstock
 #   make debug <name>   Debug one feedstock build
 #   make status [<name>]     Tags/branches + last AMD64/ARM64 build dates
+#   make status ARGS=--prune  Also prune stale local branch refs first (see script header)
 #   make ci-status [<name>]  Latest workflow run per feedstock (PASS/FAIL/RUNNING + link)
 #   make arch [<name>]  Latest run per feedstock split by job: amd64 | arm64 | publish
 #   make arch ARGS=--failed  Same, only rows with a red leg
@@ -117,7 +118,7 @@ status:
 ifdef FEEDSTOCK
 	@bash scripts/feedstock_status.sh $(FEEDSTOCK)
 else
-	@bash scripts/feedstock_status.sh
+	@bash scripts/feedstock_status.sh $(ARGS)
 endif
 
 # Latest workflow run per feedstock, including failures and in-progress runs

@@ -263,6 +263,11 @@ GH_TOKEN=<admin-pat> bash scripts/rename_master_to_main.sh   # needs repo-admin 
 bash scripts/rename_master_to_main.sh --dry-run              # preview
 ```
 
+`make status` reads branch names from your **local** clone's remote-tracking refs, not a
+live GitHub query (avoids 56 network round-trips on every invocation) — after deleting or
+renaming a branch upstream, your local clone won't know until pruned, and will keep
+showing the stale name forever. Run `make status ARGS=--prune` once to clean the cache.
+
 **Storage (anaconda.org free tier) is trimmed automatically.** After every release, the
 publish job deletes that package's old versions; the `Anaconda Channel Maintenance`
 workflow (Mondays, or manual with a dry-run toggle) sweeps the whole channel and also
