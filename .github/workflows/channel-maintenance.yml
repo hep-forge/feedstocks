@@ -90,11 +90,21 @@ jobs:
                       anaconda("copy", "--from-label", "master", "--to-label", "main", spec)
                   anaconda("label", "--remove", "master", spec, "--organization", ORG)
 
-              # 2. version trim
+              # 2. version trim. Only numeric versions count as releases:
+              # branch-named junk versions (master/latest/beta/HEAD) from
+              # the pre-policy era are trimmed like dev builds -- unless a
+              # package has NO numeric release yet, in which case its
+              # newest non-dev version is kept so it never vanishes.
               versions = [v for v in labels_of if v]
-              releases = sorted((v for v in versions if "dev" not in v), key=vkey, reverse=True)
+              releases = sorted(
+                  (v for v in versions if "dev" not in v and re.match(r"^\d", v)),
+                  key=vkey, reverse=True)
               protect = set(releases[:KEEP_N])
               protect |= {v for v in versions if labels_of[v] - {"main", "master"}}
+              if not releases:
+                  fallback = [v for v in versions if "dev" not in v]
+                  if fallback:
+                      protect.add(max(fallback, key=vkey))
               for v in sorted(versions, key=vkey, reverse=True):
                   if v in protect:
                       print(f"  KEEP   {v}  {sorted(labels_of[v])}")

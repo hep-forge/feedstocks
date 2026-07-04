@@ -291,9 +291,18 @@ jobs:
           for f in data.get("files", []):
               labels_of.setdefault(f.get("version", ""), set()).update(f.get("labels", []))
           versions = [v for v in labels_of if v]
-          releases = sorted((v for v in versions if "dev" not in v), key=vkey, reverse=True)
+          # Only numeric versions are releases; branch-named junk versions
+          # (master/latest/beta) trim away like dev builds. A package with
+          # no numeric release yet keeps its newest non-dev version.
+          releases = sorted(
+              (v for v in versions if "dev" not in v and re.match(r"^\d", v)),
+              key=vkey, reverse=True)
           protect = set(releases[:keep_n])
           protect |= {v for v in versions if labels_of[v] - {"main", "master"}}
+          if not releases:
+              fallback = [v for v in versions if "dev" not in v]
+              if fallback:
+                  protect.add(max(fallback, key=vkey))
           for v in sorted(versions, key=vkey, reverse=True):
               action = "KEEP" if v in protect else "DELETE"
               print(f"{action} {org}/{pkg}/{v}")
