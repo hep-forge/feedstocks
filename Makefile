@@ -22,8 +22,8 @@
 #   make debug <name>   Debug one feedstock build
 #   make status [<name>]     Tags/branches + last AMD64/ARM64 build dates
 #   make ci-status [<name>]  Latest workflow run per feedstock (PASS/FAIL/RUNNING + link)
-#   make status-arch [<name>]  Latest run per feedstock split by job: amd64 | arm64 | publish
-#   make status-arch ARGS=--failed  Same, only rows with a red leg
+#   make arch [<name>]  Latest run per feedstock split by job: amd64 | arm64 | publish
+#   make arch ARGS=--failed  Same, only rows with a red leg
 #                       (must be ARGS=..., not a bare --failed: make itself
 #                       intercepts any --flag-looking word on its command line)
 #   make retag <name>   Move latest tag to branch tip + push -> fires the tag build
@@ -56,15 +56,15 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status status-arch retag retag-all readme-status inspect rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status arch retag retag-all readme-status inspect rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
 
 # Positional shorthand: "make <target> <arg>" behaves like
 # "make <target> FEEDSTOCK=<arg>" for every target below that takes a
-# package name. (status-arch's --failed flag flows through the same way
+# package name. (arch's --failed flag flows through the same way
 # since it's passed straight to the script either way.) A plain
 # "make <target>" with no extra word is untouched -- FEEDSTOCK stays
 # unset and targets fall back to their "operate on everything" mode.
-PKG_TARGETS := render debug status ci-status status-arch retag inspect rerun add-macos
+PKG_TARGETS := render debug status ci-status arch retag inspect rerun add-macos
 ifneq (,$(filter $(firstword $(MAKECMDGOALS)),$(PKG_TARGETS)))
   PKG_ARG := $(word 2,$(MAKECMDGOALS))
   ifneq ($(PKG_ARG),)
@@ -132,7 +132,7 @@ endif
 
 # Latest run per feedstock broken down by job (amd64 | arm64 | publish),
 # so you can see WHICH leg broke. --failed via ARGS="--failed".
-status-arch:
+arch:
 ifdef FEEDSTOCK
 	@bash scripts/status_arch.sh $(FEEDSTOCK)
 else
@@ -176,7 +176,7 @@ endif
 
 # Rebuild EVERY feedstock at its latest tag. Builds only run on tag
 # refs -- there is no branch/dev-build mode. Prefer `make retag-all` if
-# recipes changed since tagging. Follow with `make status-arch`.
+# recipes changed since tagging. Follow with `make arch`.
 rerun-all:
 	@bash scripts/rerun_tags.sh
 

@@ -20,7 +20,7 @@ conda install -c hep-forge -c conda-forge root root-guard rivet lhapdf pythia
 
 ## Packages
 
-The table below is generated — after a rebuild wave finishes (`make status-arch`
+The table below is generated — after a rebuild wave finishes (`make arch`
 shows no failures), refresh it with `make readme-status` and commit. "Latest tag"
 is the feedstock's release tag; "Published" is what anaconda.org actually serves,
 with per-architecture availability.
@@ -164,9 +164,9 @@ make status rivet                        # Status for one feedstock
 make ci-status    # LATEST workflow run per feedstock: PASS/FAIL/RUNNING + link.
                   # Exits non-zero if anything failed — bot/cron friendly.
 make ci-status rivet                     # Same, one feedstock
-make status-arch                         # Latest run per feedstock, split by job: amd64 | arm64 | publish
-make status-arch rivet                   # Same, one feedstock
-make status-arch ARGS="--failed"         # Only rows with a red leg
+make arch                         # Latest run per feedstock, split by job: amd64 | arm64 | publish
+make arch rivet                   # Same, one feedstock
+make arch ARGS="--failed"         # Only rows with a red leg
 make inspect pythia                      # Deep dive: published versions per arch, GitHub
                   # tags + sync verdict, latest runs, error log on failure
 make retag fastjet                       # Move the latest tag to the branch tip + push
@@ -182,7 +182,7 @@ make debug fastjet                       # Debug one feedstock build
 
 > `make status` only shows the last *successful* build dates — a feedstock
 > whose latest run failed still shows its old green date there. Use
-> `make ci-status` or `make status-arch` to see failures and in-progress runs.
+> `make ci-status` or `make arch` to see failures and in-progress runs.
 
 ### Per-feedstock level (after `make distribute` or `cd feedstocks/X && make`)
 
@@ -210,7 +210,7 @@ To trigger a rebuild: `make retag <name>` — it moves the feedstock's latest ta
 to the default-branch tip and force-pushes; the tag push fires the build with the current
 recipe. (Dispatching at an *old* tag fails with "No event triggers defined in `on`":
 `workflow_dispatch` reads the workflow file at the dispatched ref, which predates the
-trigger.) Watch progress per architecture with `make status-arch` (`ARGS="--failed"` for
+trigger.) Watch progress per architecture with `make arch` (`ARGS="--failed"` for
 only the broken rows), or get the full picture for one package — published versions per
 architecture, GitHub tags, and error details on failure — with `make inspect <name>`.
 
