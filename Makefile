@@ -170,6 +170,16 @@ ifndef FEEDSTOCK
 endif
 	@bash scripts/inspect_feedstock.sh $(FEEDSTOCK)
 
+# Would the NEXT build even solve, before spending CI time to find out:
+# every hep-forge dependency's actual published architectures, this
+# recipe's own root:/libtorch: variant matrix cross-checked per-arch,
+# tag-vs-main freshness -- then everything `inspect` shows.
+doctor:
+ifndef FEEDSTOCK
+	$(error Usage: make doctor <name>   (e.g. make doctor rivet))
+endif
+	@bash scripts/doctor.sh $(FEEDSTOCK)
+
 # Trigger a rebuild at the latest tag — a package name is required to prevent flooding runners
 # Builds amd64 + linux-arm64 in parallel (one dispatch) for feedstocks on
 # the unified autoupload.yml workflow. Uses the recipe AS OF THE TAG.
