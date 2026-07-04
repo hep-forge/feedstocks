@@ -20,7 +20,7 @@ conda install -c hep-forge -c conda-forge root root-guard rivet lhapdf pythia
 
 ## Packages
 
-The table below is generated — after a rebuild wave finishes (`make arch-status`
+The table below is generated — after a rebuild wave finishes (`make status-arch`
 shows no failures), refresh it with `make readme-status` and commit. "Latest tag"
 is the feedstock's release tag; "Published" is what anaconda.org actually serves,
 with per-architecture availability.
@@ -112,8 +112,9 @@ hep-feedstocks/
 │   ├── generate_readme.py   # Regenerate a feedstock README → hep-forge badges + arch table
 │   ├── rerender_all.sh      # Sync workflow template + README across all feedstocks
 │   ├── render_all.sh        # Full conda-smithy rerender (then re-applies the two above)
-│   ├── arch_status.sh       # Latest run per feedstock: amd64 | arm64 | publish columns
+│   ├── status_arch.sh       # Latest run per feedstock: amd64 | arm64 | publish columns
 │   ├── retag_all.sh         # Move latest tags to branch tips + push (fires tag builds)
+│   ├── rename_master_to_main.sh  # One-time branch consolidation (needs admin PAT)
 │   ├── update_readme_status.py  # Refresh the status table in this README
 │   └── hep_bot/
 │       ├── sources.yaml     # Upstream version URLs for each package
@@ -129,6 +130,7 @@ hep-feedstocks/
 │   ├── hep-bot-check.yml    # Weekly upstream version check (cron Mon 06:00 UTC)
 │   ├── hep-bot-rebuild.yml  # Manual DAG-ordered rebuild trigger
 │   ├── render-sync.yml      # Daily: sync workflow+README into feedstocks, refresh status table
+│   ├── channel-maintenance.yml  # Weekly: master->main label fix + channel-wide version trim
 │   └── replay-analysis.yml  # Rivet analysis replay on self-hosted runner
 ├── examples/
 │   └── helloworld-feedstock/ # Minimal working example to copy from
@@ -162,9 +164,9 @@ make status rivet                        # Status for one feedstock
 make ci-status    # LATEST workflow run per feedstock: PASS/FAIL/RUNNING + link.
                   # Exits non-zero if anything failed — bot/cron friendly.
 make ci-status rivet                     # Same, one feedstock
-make arch-status                         # Latest run per feedstock, split by job: amd64 | arm64 | publish
-make arch-status rivet                   # Same, one feedstock
-make arch-status ARGS="--failed"         # Only rows with a red leg
+make status-arch                         # Latest run per feedstock, split by job: amd64 | arm64 | publish
+make status-arch rivet                   # Same, one feedstock
+make status-arch ARGS="--failed"         # Only rows with a red leg
 make inspect pythia                      # Deep dive: published versions per arch, GitHub
                   # tags + sync verdict, latest runs, error log on failure
 make retag fastjet                       # Move the latest tag to the branch tip + push
@@ -172,15 +174,15 @@ make retag fastjet                       # Move the latest tag to the branch tip
 make retag-all    # Same, every feedstock
 make readme-status  # Refresh the README status table below from anaconda.org
 make rerun fastjet                       # Rebuild one feedstock at its latest tag (recipe AS OF THE TAG)
-make rerun-all    # Rebuild ALL feedstocks on their default branch (current recipes,
-                  # versions get a ".dev" suffix) — use to validate fixes end-to-end
+make rerun-all    # Rebuild ALL feedstocks at their latest tags (recipe AS OF THE TAG;
+                  # prefer retag-all when recipes changed since tagging)
 make distribute   # Copy this Makefile into every feedstock
 make debug fastjet                       # Debug one feedstock build
 ```
 
 > `make status` only shows the last *successful* build dates — a feedstock
 > whose latest run failed still shows its old green date there. Use
-> `make ci-status` or `make arch-status` to see failures and in-progress runs.
+> `make ci-status` or `make status-arch` to see failures and in-progress runs.
 
 ### Per-feedstock level (after `make distribute` or `cd feedstocks/X && make`)
 
@@ -200,15 +202,15 @@ make debug        # Debug this feedstock's build
 2. Builds with `conda build recipe/` on linux-amd64 and linux-arm64
 3. Uploads `.conda` packages to `https://anaconda.org/hep-forge/` with `anaconda upload --label <branch>` — the publish job is tag-gated, refuses any `*dev*` version, and uploads each architecture independently (one failed leg doesn't block the other)
 
-Manual runs from the Actions UI are allowed at a **tag ref** (full build + upload) or on a
-**branch only with the `debug` input enabled** — debug builds produce artifacts but never
-upload to Anaconda.
+Manual runs from the Actions UI are allowed **only at a tag ref** (pick the tag as the
+run's ref). Dispatching on a branch is a no-op — the run is skipped, nothing builds,
+nothing uploads. There is no branch/dev-build mode.
 
 To trigger a rebuild: `make retag <name>` — it moves the feedstock's latest tag
 to the default-branch tip and force-pushes; the tag push fires the build with the current
 recipe. (Dispatching at an *old* tag fails with "No event triggers defined in `on`":
 `workflow_dispatch` reads the workflow file at the dispatched ref, which predates the
-trigger.) Watch progress per architecture with `make arch-status` (`ARGS="--failed"` for
+trigger.) Watch progress per architecture with `make status-arch` (`ARGS="--failed"` for
 only the broken rows), or get the full picture for one package — published versions per
 architecture, GitHub tags, and error details on failure — with `make inspect <name>`.
 
@@ -229,9 +231,8 @@ can re-add or re-remove the macOS leg across all feedstocks if that call ever ch
 
 Recipe fixes only take effect on rebuilds that check out a ref containing them:
 `make retag x` (or `make retag-all`) is the standard path — it rebuilds the
-*current* recipe under the clean tag version. `make rerun-all` dispatches every feedstock
-on its default branch with `debug=true`: builds validate end-to-end but nothing is
-uploaded (versions carry a `.dev` suffix and the publish job skips non-tag refs).
+*current* recipe under the clean tag version. `make rerun-all` re-dispatches every
+feedstock at its latest existing tag (recipe *as of the tag*).
 
 ### README generation
 
@@ -249,6 +250,32 @@ Two mechanisms keep hep-forge READMEs in place:
    `scripts/render_sync.sh --commit`, which syncs `scripts/templates/autoupload.yml` and
    the README into every feedstock, pushes what changed, refreshes the status table in
    this README, and bumps the submodule pointers — no manual render step required.
+
+### Channel hygiene: branches, labels, storage
+
+**Branch policy: every feedstock's only long-lived branch is `main`** (plus the
+deliberate version-line branches described in the next section). Anaconda labels are
+derived from branch names, so a stray `master` branch publishes under a `master` label —
+invisible to default installs, which only read `main`. Consolidate stragglers with:
+
+```bash
+GH_TOKEN=<admin-pat> bash scripts/rename_master_to_main.sh   # needs repo-admin rights
+bash scripts/rename_master_to_main.sh --dry-run              # preview
+```
+
+**Storage (anaconda.org free tier) is trimmed automatically.** After every release, the
+publish job deletes that package's old versions; the `Anaconda Channel Maintenance`
+workflow (Mondays, or manual with a dry-run toggle) sweeps the whole channel and also
+migrates any lingering `master`-label files to `main`. What survives a trim:
+
+- the newest **2** non-dev versions of the package;
+- any version with a file carrying a label other than `main`/`master` — this protects
+  the version-line labels (`legacy`, `eic`, `cern`, `old`, …) automatically;
+- to protect a specific version forever, give it the **`keep` label**:
+  `anaconda label --copy main keep --organization hep-forge <pkg>/<version>` or via the
+  anaconda.org web UI. No `meta.yaml` change needed — old versions stay listed there.
+
+Everything else is deleted, including any pre-policy `*.dev` uploads.
 
 ### Multiple concurrent version lines
 
@@ -321,6 +348,7 @@ Two GitHub Actions workflows live in this meta-repo:
 | `hep-bot version check` | Every Monday 06:00 UTC, or manual | Scrapes upstream release pages; for each outdated package, commits the bump directly to that feedstock's own repo, then opens a PR **on this meta-repo** to bump the submodule pointer to match |
 | `hep-bot ordered rebuild` | Manual (`workflow_dispatch`) | Triggers feedstock builds in DAG order, tier by tier, waiting for each tier to finish before starting the next |
 | `Render & README Sync` | Daily 05:00 UTC, manual, or template/generator changes | Syncs the CI workflow template + hep-forge README into every feedstock, pushes what changed, refreshes this README's status table, bumps submodule pointers |
+| `Anaconda Channel Maintenance` | Mondays 05:30 UTC, or manual (dry-run default) | Migrates lingering `master`-label files to `main`, trims old package versions channel-wide (keep newest 2 + any `keep`/version-line label) |
 
 ### Required secret
 

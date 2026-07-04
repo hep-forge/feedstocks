@@ -97,9 +97,22 @@ jobs:
                   return ["autoupload.yml"]
               return ["autoupload.amd64.yml", "autoupload.arm64.yml"]
 
-          def trigger(repo, workflow, since):
+          def latest_tag(pkg):
+              # Builds only run on tag refs (autoupload.yml gates on
+              # github.ref_type == 'tag'); a bare dispatch on the default
+              # branch would be skipped silently. Prefer numeric tags --
+              # the only kind the push trigger accepts.
+              r = subprocess.run(
+                  ["git", "-C", f"feedstocks/{pkg}-feedstock", "tag", "--sort=-v:refname"],
+                  capture_output=True, text=True,
+              )
+              tags = r.stdout.split()
+              numeric = [t for t in tags if t[:1].isdigit()]
+              return (numeric or tags or [None])[0]
+
+          def trigger(repo, workflow, since, ref):
               result = subprocess.run(
-                  ["gh", "workflow", "run", workflow, "--repo", repo],
+                  ["gh", "workflow", "run", workflow, "--repo", repo, "--ref", ref],
                   capture_output=True, text=True,
               )
               if result.returncode != 0:
@@ -160,9 +173,13 @@ jobs:
               tracked = []
               for pkg in pkgs:
                   repo = f"hep-forge/{pkg}-feedstock"
+                  tag = latest_tag(pkg)
+                  if tag is None:
+                      print(f"  SKIP {repo}: no tags (builds only run on tag refs)")
+                      continue
                   for workflow in workflows_for(pkg):
-                      print(f"Triggering {workflow} for {repo}...")
-                      run_id = trigger(repo, workflow, since)
+                      print(f"Triggering {workflow} for {repo} at tag {tag}...")
+                      run_id = trigger(repo, workflow, since, tag)
                       if run_id is not None:
                           tracked.append((repo, workflow, run_id))
 

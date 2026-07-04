@@ -8,9 +8,9 @@
 # feedstock's latest run failed.
 #
 # Usage:
-#   bash scripts/arch_status.sh                 # all feedstocks
-#   bash scripts/arch_status.sh fastjet         # one feedstock
-#   bash scripts/arch_status.sh --failed        # only rows with a red leg
+#   bash scripts/status_arch.sh                 # all feedstocks
+#   bash scripts/status_arch.sh fastjet         # one feedstock
+#   bash scripts/status_arch.sh --failed        # only rows with a red leg
 #
 # Requirements: gh CLI authenticated as a hep-forge org member
 

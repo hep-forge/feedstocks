@@ -22,8 +22,8 @@
 #   make debug <name>   Debug one feedstock build
 #   make status [<name>]     Tags/branches + last AMD64/ARM64 build dates
 #   make ci-status [<name>]  Latest workflow run per feedstock (PASS/FAIL/RUNNING + link)
-#   make arch-status [<name>]  Latest run per feedstock split by job: amd64 | arm64 | publish
-#   make arch-status ARGS=--failed  Same, only rows with a red leg
+#   make status-arch [<name>]  Latest run per feedstock split by job: amd64 | arm64 | publish
+#   make status-arch ARGS=--failed  Same, only rows with a red leg
 #                       (must be ARGS=..., not a bare --failed: make itself
 #                       intercepts any --flag-looking word on its command line)
 #   make retag <name>   Move latest tag to branch tip + push -> fires the tag build
@@ -32,7 +32,7 @@
 #   make inspect <name>  Deep-dive one package: published versions per arch,
 #                        GitHub tags + sync verdict, latest runs, error log on failure
 #   make rerun <name>    Rebuild one feedstock at its latest tag (real release)
-#   make rerun-all       Rebuild ALL feedstocks on their default branch (".dev" validation builds)
+#   make rerun-all       Rebuild ALL feedstocks at their latest tags (no branch/dev builds)
 #   make add-macos <name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
 #   make add-macos-all   Migrate every feedstock not yet on the unified workflow
 #   make variant-bump KEY=<name> VERSION=<value>  Roll a new version of any variant key out to consumers, trim to newest 2
@@ -56,15 +56,15 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status arch-status retag retag-all readme-status inspect rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status status-arch retag retag-all readme-status inspect rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
 
 # Positional shorthand: "make <target> <arg>" behaves like
 # "make <target> FEEDSTOCK=<arg>" for every target below that takes a
-# package name. (arch-status's --failed flag flows through the same way
+# package name. (status-arch's --failed flag flows through the same way
 # since it's passed straight to the script either way.) A plain
 # "make <target>" with no extra word is untouched -- FEEDSTOCK stays
 # unset and targets fall back to their "operate on everything" mode.
-PKG_TARGETS := render debug status ci-status arch-status retag inspect rerun add-macos
+PKG_TARGETS := render debug status ci-status status-arch retag inspect rerun add-macos
 ifneq (,$(filter $(firstword $(MAKECMDGOALS)),$(PKG_TARGETS)))
   PKG_ARG := $(word 2,$(MAKECMDGOALS))
   ifneq ($(PKG_ARG),)
@@ -132,11 +132,11 @@ endif
 
 # Latest run per feedstock broken down by job (amd64 | arm64 | publish),
 # so you can see WHICH leg broke. --failed via ARGS="--failed".
-arch-status:
+status-arch:
 ifdef FEEDSTOCK
-	@bash scripts/arch_status.sh $(FEEDSTOCK)
+	@bash scripts/status_arch.sh $(FEEDSTOCK)
 else
-	@bash scripts/arch_status.sh $(ARGS)
+	@bash scripts/status_arch.sh $(ARGS)
 endif
 
 # Move the latest tag to the default-branch tip and force-push it; the tag
@@ -174,11 +174,11 @@ ifndef FEEDSTOCK
 endif
 	@bash scripts/rerun_tags.sh $(FEEDSTOCK)
 
-# Rebuild EVERY feedstock on its default branch: validates the current
-# recipe/CI state end-to-end. Versions get a ".dev" suffix so they don't
-# collide with tagged releases. Follow with `make ci-status`.
+# Rebuild EVERY feedstock at its latest tag. Builds only run on tag
+# refs -- there is no branch/dev-build mode. Prefer `make retag-all` if
+# recipes changed since tagging. Follow with `make status-arch`.
 rerun-all:
-	@bash scripts/rerun_tags.sh --main
+	@bash scripts/rerun_tags.sh
 
 # Migrate one feedstock's CI from separate amd64/arm64 workflows to the
 # unified amd64 + linux-arm64 + macos-arm64 matrix workflow.

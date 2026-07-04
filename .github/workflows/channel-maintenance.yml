@@ -1,0 +1,104 @@
+name: Anaconda Channel Maintenance
+
+# Keeps the hep-forge channel small and consistent (free-tier storage):
+#
+#   1. Label hygiene: every file still published under the retired
+#      `master` label is copied to `main`, then the `master` label is
+#      dropped -- default installs (-c hep-forge) only see `main`.
+#   2. Version trim, channel-wide: per package keep the newest
+#      TRIM_KEEP non-dev versions plus any version carrying a label
+#      other than main/master (branch lines like legacy/eic/cern/old,
+#      and the explicit `keep` label). Delete the rest, including
+#      retired *dev* uploads.
+#
+# The publish job in each feedstock already trims its own package after
+# every release; this sweep catches packages that rarely publish, and
+# reports every label in use so strays stand out in the log.
+
+on:
+  schedule:
+    - cron: '30 5 * * 1'   # Mondays, after the render-sync run
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only print the plan, delete nothing"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  maintain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install anaconda-client
+        run: pip install anaconda-client
+
+      - name: Label hygiene + version trim
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+          ORG: hep-forge
+          TRIM_KEEP: "2"
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}
+        run: |
+          python3 <<'PYEOF'
+          import json, os, re, subprocess, urllib.request
+
+          ORG = os.environ["ORG"]
+          KEEP_N = int(os.environ["TRIM_KEEP"])
+          DRY = os.environ["DRY_RUN"] == "true"
+          TOKEN = os.environ["ANACONDA_API_TOKEN"]
+
+          def api(path):
+              with urllib.request.urlopen(f"https://api.anaconda.org{path}", timeout=30) as r:
+                  return json.load(r)
+
+          def anaconda(*args):
+              cmd = ["anaconda", "-t", TOKEN, *args]
+              shown = " ".join(["anaconda", "-t", "***", *args])
+              if DRY:
+                  print(f"  [dry-run] {shown}")
+                  return
+              r = subprocess.run(cmd, capture_output=True, text=True)
+              if r.returncode != 0:
+                  print(f"  WARNING: {shown}: {r.stderr.strip()}")
+
+          def vkey(v):
+              return [int(p) if p.isdigit() else -1 for p in re.split(r"[._-]", v)]
+
+          packages = [p["name"] for p in api(f"/packages/{ORG}")]
+          print(f"{len(packages)} packages on {ORG}\n")
+
+          for pkg in sorted(packages):
+              data = api(f"/package/{ORG}/{pkg}")
+              files = data.get("files", [])
+              labels_of, all_labels = {}, set()
+              for f in files:
+                  ls = set(f.get("labels", []))
+                  all_labels |= ls
+                  labels_of.setdefault(f.get("version", ""), set()).update(ls)
+              print(f"== {pkg}: labels={sorted(all_labels)}")
+
+              # 1. master -> main label migration, per file
+              for f in files:
+                  ls = set(f.get("labels", []))
+                  if "master" not in ls:
+                      continue
+                  spec = f"{ORG}/{pkg}/{f['version']}/{f['basename']}"
+                  if "main" not in ls:
+                      anaconda("copy", "--from-label", "master", "--to-label", "main", spec)
+                  anaconda("label", "--remove", "master", spec, "--organization", ORG)
+
+              # 2. version trim
+              versions = [v for v in labels_of if v]
+              releases = sorted((v for v in versions if "dev" not in v), key=vkey, reverse=True)
+              protect = set(releases[:KEEP_N])
+              protect |= {v for v in versions if labels_of[v] - {"main", "master"}}
+              for v in sorted(versions, key=vkey, reverse=True):
+                  if v in protect:
+                      print(f"  KEEP   {v}  {sorted(labels_of[v])}")
+                  else:
+                      print(f"  DELETE {v}  {sorted(labels_of[v])}")
+                      anaconda("remove", "--force", f"{ORG}/{pkg}/{v}")
+          PYEOF
