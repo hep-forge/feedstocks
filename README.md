@@ -26,7 +26,7 @@ is the feedstock's release tag; "Published" is what anaconda.org actually serves
 with per-architecture availability.
 
 <!-- status:begin -->
-_Last refreshed: 2026-07-03 (`python3 scripts/update_readme_status.py`)_
+_Last refreshed: 2026-07-04 (`python3 scripts/update_readme_status.py`)_
 
 | Feedstock | Latest tag | Published | amd64 | arm64 |
 |-----------|------------|-----------|-------|-------|
@@ -46,7 +46,7 @@ _Last refreshed: 2026-07-03 (`python3 scripts/update_readme_status.py`)_
 | [edm4hep](https://github.com/hep-forge/edm4hep-feedstock) | `1.0.0` | — | ❌ | ❌ |
 | [eko](https://github.com/hep-forge/eko-feedstock) | `0.8.5` | [`0.14.6` ⚠️](https://anaconda.org/hep-forge/eko) | ✅ | ✅ |
 | [escalade](https://github.com/hep-forge/escalade-feedstock) | `v9.08.26` | [`v9.08.26`](https://anaconda.org/hep-forge/escalade) | ✅ | ❌ |
-| [fastjet-contrib](https://github.com/hep-forge/fastjet-contrib-feedstock) | `1.056` | [`1.056`](https://anaconda.org/hep-forge/fastjet-contrib) | ✅ | ❌ |
+| [fastjet-contrib](https://github.com/hep-forge/fastjet-contrib-feedstock) | `1.056` | [`1.056`](https://anaconda.org/hep-forge/fastjet-contrib) | ✅ | ✅ |
 | [fastjet](https://github.com/hep-forge/fastjet-feedstock) | `3.5.1` | [`3.5.1`](https://anaconda.org/hep-forge/fastjet) | ✅ | ✅ |
 | [fastnlo](https://github.com/hep-forge/fastnlo-feedstock) | `2.6.0` | [`2.6.0`](https://anaconda.org/hep-forge/fastnlo) | ✅ | ❌ |
 | [frameformat](https://github.com/hep-forge/frameformat-feedstock) | `0.1` | [`0.1`](https://anaconda.org/hep-forge/frameformat) | ✅ | ❌ |
@@ -60,7 +60,7 @@ _Last refreshed: 2026-07-03 (`python3 scripts/update_readme_status.py`)_
 | [jana](https://github.com/hep-forge/jana-feedstock) | `2026.02.00` | — | ❌ | ❌ |
 | [kfrlib](https://github.com/hep-forge/kfrlib-feedstock) | `7.0.1` | [`7.0.1`](https://anaconda.org/hep-forge/kfrlib) | ✅ | ✅ |
 | [lhapdf](https://github.com/hep-forge/lhapdf-feedstock) | `6.5.5` | [`6.5.5`](https://anaconda.org/hep-forge/lhapdf) | ✅ | ✅ |
-| [libdate-tz](https://github.com/hep-forge/libdate-tz-feedstock) | `—` | [`0.0.0.dev` ⚠️](https://anaconda.org/hep-forge/libdate-tz) | ✅ | ❌ |
+| [libdate-tz](https://github.com/hep-forge/libdate-tz-feedstock) | `—` | — | ❌ | ❌ |
 | [mcfm](https://github.com/hep-forge/mcfm-feedstock) | `10.3` | [`10.3`](https://anaconda.org/hep-forge/mcfm) | ✅ | ❌ |
 | [minio-cpp](https://github.com/hep-forge/minio-cpp-feedstock) | `0.3.0.1` | [`0.3.0` ⚠️](https://anaconda.org/hep-forge/minio-cpp) | ✅ | ❌ |
 | [nlojetxx](https://github.com/hep-forge/nlojetxx-feedstock) | `4.1.3` | [`4.1.3`](https://anaconda.org/hep-forge/nlojetxx) | ✅ | ✅ |
@@ -79,7 +79,7 @@ _Last refreshed: 2026-07-03 (`python3 scripts/update_readme_status.py`)_
 | [rkafka](https://github.com/hep-forge/rkafka-feedstock) | `0.1` | [`0.1`](https://anaconda.org/hep-forge/rkafka) | ✅ | ❌ |
 | [root](https://github.com/hep-forge/root-feedstock) | `6.38.04` | [`6.38.04`](https://anaconda.org/hep-forge/root) | ✅ | ✅ |
 | [root-guard](https://github.com/hep-forge/root-guard-feedstock) | `1.0` | [`1` ⚠️](https://anaconda.org/hep-forge/root-guard) | ✅ | ✅ |
-| [root-plus](https://github.com/hep-forge/root-plus-feedstock) | `1.0.0` | [`beta` ⚠️](https://anaconda.org/hep-forge/root-plus) | ✅ | ❌ |
+| [root-plus](https://github.com/hep-forge/root-plus-feedstock) | `1.0.0` | [`alpha` ⚠️](https://anaconda.org/hep-forge/root-plus) | ✅ | ❌ |
 | [rsignal](https://github.com/hep-forge/rsignal-feedstock) | `—` | — | ❌ | ❌ |
 | [sz3](https://github.com/hep-forge/sz3-feedstock) | `3.3.1` | [`3.3.1`](https://anaconda.org/hep-forge/sz3) | ✅ | ✅ |
 | [xfitter-dev](https://github.com/hep-forge/xfitter-dev-feedstock) | `2.2.1` | [`2.2.1`](https://anaconda.org/hep-forge/xfitter-dev) | ✅ | ❌ |
