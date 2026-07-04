@@ -16,6 +16,9 @@
 # Requires: gh CLI authenticated as a hep-forge org member
 
 set -euo pipefail
+# Exit quietly (not a scary Make 'Error 141') if stdout closes early --
+# piping into head/less and quitting, or an interrupted terminal.
+trap 'exit 0' PIPE
 
 FILTER="${1:-}"
 ORG="hep-forge"

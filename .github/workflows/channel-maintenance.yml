@@ -15,11 +15,15 @@ name: Anaconda Channel Maintenance
 #      make internally) instead of the anaconda-client CLI, which kept
 #      swallowing real error text behind one uninformative log line.
 #   2. Version trim, channel-wide: per package keep the newest
-#      TRIM_KEEP non-dev versions plus any version carrying a label
-#      other than main/master (branch lines like legacy/eic/cern/old,
-#      and the explicit `keep` label, applied per-version with
-#      `anaconda copy <org>/<pkg>/<version> --from-label main --to-label keep`).
-#      Delete the rest, including retired *dev* uploads.
+#      TRIM_KEEP non-dev versions, any version carrying a label other
+#      than main/master (branch lines like legacy/eic/cern/old, and the
+#      explicit `keep` label, applied per-version with
+#      `anaconda copy <org>/<pkg>/<version> --from-label main --to-label keep`),
+#      and any version listed in that feedstock's recipe/meta.yaml under
+#      extra.keep_versions (backward-compat pins, e.g. root-feedstock
+#      protecting old ROOT releases still required by downstream
+#      conda_build_config.yaml `root:` variants). Delete the rest,
+#      including retired *dev* uploads.
 #
 # The publish job in each feedstock already trims its own package's
 # versions after every release; this sweep additionally catches
@@ -42,6 +46,14 @@ jobs:
   maintain:
     runs-on: ubuntu-latest
     steps:
+      # needed so the trim step can read each feedstock's
+      # recipe/meta.yaml extra.keep_versions
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 1
+
       - name: Install anaconda-client
         run: pip install anaconda-client
 
@@ -96,6 +108,23 @@ jobs:
           def vkey(v):
               return [int(p) if p.isdigit() else -1 for p in re.split(r"[._-]", v)]
 
+          def keep_versions_from_recipe(pkg):
+              # Regex, not a real YAML parser (meta.yaml is jinja-templated;
+              # extra.keep_versions is always a flat list of version strings).
+              try:
+                  text = open(f"feedstocks/{pkg}-feedstock/recipe/meta.yaml").read()
+              except OSError:
+                  return set()
+              m = re.search(r"^[ \t]*keep_versions:[ \t]*\n((?:[ \t]+-[ \t]*.+\n?)+)", text, re.MULTILINE)
+              if not m:
+                  return set()
+              out = set()
+              for line in m.group(1).splitlines():
+                  line = line.strip()
+                  if line.startswith("-"):
+                      out.add(line[1:].strip().strip('"').strip("'"))
+              return out
+
           packages = [p["name"] for p in api(f"/packages/{ORG}")]
           print(f"{len(packages)} packages on {ORG}\n")
 
@@ -143,6 +172,7 @@ jobs:
                   key=vkey, reverse=True)
               protect = set(releases[:KEEP_N])
               protect |= {v for v in versions if labels_of[v] - {"main", "master"}}
+              protect |= keep_versions_from_recipe(pkg) & set(versions)
               if not releases:
                   fallback = [v for v in versions if "dev" not in v]
                   if fallback:
