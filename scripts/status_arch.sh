@@ -109,7 +109,10 @@ for dir in feedstocks/*-feedstock; do
   cell "$amd64"; printf " "
   cell "$arm64"; printf " "
   cell "$publish"; printf " "
-  printf "%-19s %-17s ${DIM}%s${RESET}\n" "${event}@${ref}" "$started" "$url"
+  printf "%-19s %-17s\n" "${event}@${ref}" "$started"
+  # Run URL on its own line, indented to the AMD64 column -- the full
+  # row otherwise overflows narrow terminals and wraps unreadably.
+  printf "%-29s${DIM}%s${RESET}\n" "" "$url"
 done
 
 echo ""
