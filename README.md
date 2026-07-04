@@ -272,8 +272,11 @@ migrates any lingering `master`-label files to `main`. What survives a trim:
 - any version with a file carrying a label other than `main`/`master` — this protects
   the version-line labels (`legacy`, `eic`, `cern`, `old`, …) automatically;
 - to protect a specific version forever, give it the **`keep` label**:
-  `anaconda label --copy main keep --organization hep-forge <pkg>/<version>` or via the
+  `anaconda copy hep-forge/<pkg>/<version> --from-label main --to-label keep` or via the
   anaconda.org web UI. No `meta.yaml` change needed — old versions stay listed there.
+  (`anaconda label` itself has no per-package/version scoping — it always acts on the
+  whole org account — which is exactly why it's the right tool for the one-time
+  `master`→`main` migration below but the wrong one for protecting a single version.)
 
 Everything else is deleted, including any pre-policy `*.dev` uploads.
 

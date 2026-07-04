@@ -2,18 +2,22 @@ name: Anaconda Channel Maintenance
 
 # Keeps the hep-forge channel small and consistent (free-tier storage):
 #
-#   1. Label hygiene: every file still published under the retired
-#      `master` label is copied to `main`, then the `master` label is
-#      dropped -- default installs (-c hep-forge) only see `main`.
+#   1. Label hygiene: `anaconda label`/`channel` is an ORG-WIDE operation
+#      (see binstar_client/commands/channel.py -- it has no per-package
+#      or per-file scoping at all), so the retired `master` label is
+#      migrated to `main` in exactly two calls covering every package at
+#      once, not a per-file loop.
 #   2. Version trim, channel-wide: per package keep the newest
 #      TRIM_KEEP non-dev versions plus any version carrying a label
 #      other than main/master (branch lines like legacy/eic/cern/old,
-#      and the explicit `keep` label). Delete the rest, including
-#      retired *dev* uploads.
+#      and the explicit `keep` label, applied per-version with
+#      `anaconda copy <org>/<pkg>/<version> --from-label main --to-label keep`
+#      -- that command DOES take a package/version spec). Delete the
+#      rest, including retired *dev* uploads.
 #
-# The publish job in each feedstock already trims its own package after
-# every release; this sweep catches packages that rarely publish, and
-# reports every label in use so strays stand out in the log.
+# The publish job in each feedstock already trims its own package's
+# versions after every release; this sweep additionally catches
+# packages that rarely publish and does the one-time label migration.
 
 on:
   schedule:
@@ -70,6 +74,14 @@ jobs:
           packages = [p["name"] for p in api(f"/packages/{ORG}")]
           print(f"{len(packages)} packages on {ORG}\n")
 
+          # 1. master -> main label migration: `anaconda label` operates on
+          # the WHOLE org account, not a single package/file, so this is
+          # two calls total, not a per-package or per-file loop.
+          print("== org-wide: master -> main label migration")
+          anaconda("label", "--copy", "master", "main", "--organization", ORG)
+          anaconda("label", "--remove", "master", "--organization", ORG)
+          print()
+
           for pkg in sorted(packages):
               data = api(f"/package/{ORG}/{pkg}")
               files = data.get("files", [])
@@ -79,16 +91,6 @@ jobs:
                   all_labels |= ls
                   labels_of.setdefault(f.get("version", ""), set()).update(ls)
               print(f"== {pkg}: labels={sorted(all_labels)}")
-
-              # 1. master -> main label migration, per file
-              for f in files:
-                  ls = set(f.get("labels", []))
-                  if "master" not in ls:
-                      continue
-                  spec = f"{ORG}/{pkg}/{f['version']}/{f['basename']}"
-                  if "main" not in ls:
-                      anaconda("copy", "--from-label", "master", "--to-label", "main", spec)
-                  anaconda("label", "--remove", "master", spec, "--organization", ORG)
 
               # 2. version trim. Only numeric versions count as releases:
               # branch-named junk versions (master/latest/beta/HEAD) from

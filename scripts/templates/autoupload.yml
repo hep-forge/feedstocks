@@ -269,7 +269,10 @@ jobs:
       # file carrying a label other than main/master -- that protects the
       # branch-line labels (legacy, eic, cern, old, ...) and the explicit
       # "keep" label. Protect a version forever with:
-      #   anaconda label --organization hep-forge --copy main keep  (UI works too)
+      #   anaconda copy <org>/<pkg>/<version> --from-label main --to-label keep
+      # (the org-wide `anaconda label` command has no per-version scoping;
+      # `copy` with a 3-part spec -- no filename -- copies every file of
+      # that version to the new label. UI works too.)
       # Everything else, including retired *dev* uploads, is removed.
       - name: Trim Old Versions
         env:
