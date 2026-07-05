@@ -3,9 +3,9 @@
 # by job (amd64 / arm64 / publish), what triggered it, and branches.
 #
 # A job cell shows the LATEST run's outcome (PASS/FAIL/skip/RUNNING).
-# If a leg FAILED, the cell also shows how long ago that job last
-# passed (e.g. "FAIL (ok 06-20)") -- otherwise "FAIL" alone doesn't
-# tell you whether this is a fresh break or a week-old one.
+# If a leg FAILED, the cell also shows the date it last passed (e.g.
+# "FAIL(ok 06-20)") -- otherwise "FAIL" alone doesn't tell you whether
+# this is a fresh break or a week-old one.
 #
 # The BRANCHES column reads local remote-tracking refs (git branch -r),
 # not a live GitHub query -- deliberately, to avoid a fetch per feedstock
@@ -21,6 +21,7 @@
 #   bash scripts/feedstock_status.sh --prune    # also prune stale local
 #                                                # remote-tracking branches first
 #   bash scripts/feedstock_status.sh --failed   # only rows with a red leg
+#   VERBOSE=1 bash scripts/feedstock_status.sh  # also print each run's URL
 #
 # Requirements: gh CLI authenticated as a hep-forge org member
 
@@ -33,6 +34,7 @@ ORG="hep-forge"
 FILTER=""
 PRUNE=0
 FAILED_ONLY=0
+VERBOSE="${VERBOSE:-0}"
 
 for arg in "$@"; do
   case "$arg" in
@@ -176,9 +178,11 @@ for dir in feedstocks/*-feedstock; do
   cell "$arm64" "$last_ok"; printf " "
   cell "$publish" "$last_ok"; printf " "
   printf "%-19s  ${CYAN}%s${RESET}\n" "${trigger_src}@${ref}" "$branches"
-  # Run URL on its own indented line -- the full row otherwise overflows
-  # narrow terminals and wraps unreadably.
-  printf "%-53s${DIM}%s${RESET}\n" "" "$url"
+  # Run URL on its own indented line -- opt-in (VERBOSE=1) since it's
+  # rarely needed and doubles the line count of an already-long table.
+  if [ "$VERBOSE" = "1" ]; then
+    printf "%-53s${DIM}%s${RESET}\n" "" "$url"
+  fi
 done
 
 echo ""

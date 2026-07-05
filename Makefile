@@ -26,6 +26,7 @@
 #   make status ARGS=--failed  Only rows with a red leg
 #                       (must be ARGS=..., not a bare --flag: make itself
 #                       intercepts any --flag-looking word on its command line)
+#   make status VERBOSE=1  Also print each row's run URL (hidden by default)
 #   make ci-status [<name>]  Latest workflow run per feedstock (PASS/FAIL/RUNNING + link)
 #   make retag <name>   Move latest tag to branch tip + push -> fires the tag build
 #   make retag-all       Same for every feedstock (the rebuild mechanism under tag-only CI)
@@ -125,9 +126,9 @@ bot-check:
 # --prune / --failed via ARGS="--prune" / ARGS="--failed".
 status:
 ifdef FEEDSTOCK
-	@bash scripts/feedstock_status.sh $(FEEDSTOCK)
+	@VERBOSE=$(VERBOSE) bash scripts/feedstock_status.sh $(FEEDSTOCK)
 else
-	@bash scripts/feedstock_status.sh $(ARGS)
+	@VERBOSE=$(VERBOSE) bash scripts/feedstock_status.sh $(ARGS)
 endif
 
 # Latest workflow run per feedstock, including failures and in-progress runs.
