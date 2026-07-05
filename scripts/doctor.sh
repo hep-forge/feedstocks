@@ -16,6 +16,7 @@
 #   bash scripts/doctor.sh <package>    # one feedstock, full detail + `inspect`
 #   make doctor                         # same, all feedstocks
 #   make doctor <package>               # same, one feedstock
+#   make doctor <package> N=100         # same, last 100 lines per failed job (default 20)
 #
 # Requirements: gh CLI authenticated as a hep-forge org member, python3+pyyaml
 

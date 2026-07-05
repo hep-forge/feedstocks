@@ -32,10 +32,12 @@
 #   make readme-status   Refresh the feedstock status table in README.md from anaconda.org
 #   make inspect <name>  Deep-dive one package: published versions per arch,
 #                        GitHub tags + sync verdict, latest runs, error log on failure
+#   make inspect <name> N=100  Same, but show the last 100 lines per failed job (default 20)
 #   make doctor <name>   Diagnose BEFORE retagging: hep-forge dependencies actually
 #                        published on every arch this package builds for, this
 #                        recipe's own root:/libtorch: variant matrix cross-checked
 #                        per-arch, tag-vs-main freshness, then everything `inspect` shows
+#   make doctor <name> N=100  Same, with a longer/shorter failed-job log tail
 #   make rerun <name>    Rebuild one feedstock at its latest tag (real release)
 #   make rerun-all       Rebuild ALL feedstocks at their latest tags (no branch/dev builds)
 #   make add-macos <name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
@@ -168,7 +170,7 @@ inspect:
 ifndef FEEDSTOCK
 	$(error Usage: make inspect <name>   (e.g. make inspect pythia))
 endif
-	@bash scripts/inspect_feedstock.sh $(FEEDSTOCK)
+	@N=$(N) bash scripts/inspect_feedstock.sh $(FEEDSTOCK)
 
 # Would the NEXT build even solve, before spending CI time to find out:
 # every hep-forge dependency's actual published architectures, this
@@ -178,7 +180,7 @@ doctor:
 ifndef FEEDSTOCK
 	$(error Usage: make doctor <name>   (e.g. make doctor rivet))
 endif
-	@bash scripts/doctor.sh $(FEEDSTOCK)
+	@N=$(N) bash scripts/doctor.sh $(FEEDSTOCK)
 
 # Trigger a rebuild at the latest tag — a package name is required to prevent flooding runners
 # Builds amd64 + linux-arm64 in parallel (one dispatch) for feedstocks on

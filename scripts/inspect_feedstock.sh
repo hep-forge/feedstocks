@@ -12,6 +12,7 @@
 # Usage:
 #   bash scripts/inspect_feedstock.sh pythia
 #   make inspect FEEDSTOCK=pythia
+#   make inspect pythia N=100   # last 100 lines per failed job (default 20)
 #
 # Requirements: gh CLI authenticated as a hep-forge org member, python3
 
@@ -22,9 +23,10 @@ trap 'exit 0' PIPE
 
 ORG="hep-forge"
 PKG="${1:-}"
-[ -z "$PKG" ] && { echo "Usage: bash scripts/inspect_feedstock.sh <package>"; exit 1; }
+[ -z "$PKG" ] && { echo "Usage: bash scripts/inspect_feedstock.sh <package> [N=lines]"; exit 1; }
 PKG="${PKG%-feedstock}"
 REPO="$PKG-feedstock"
+LINES="${N:-20}"
 
 cd "$(dirname "$0")/.."
 
@@ -127,16 +129,18 @@ if [ -n "$RUN_ID" ]; then
   echo "  https://github.com/$ORG/$REPO/actions/runs/$RUN_ID"
   hr
 
-  # ---------- 4. failure details: last 20 raw lines PER FAILED JOB -----------
+  # ---------- 4. failure details: last N raw lines PER FAILED JOB ------------
   # Keyword-grepping the merged log (the old approach here) repeatedly
   # missed the actual root cause this session -- a test failure, a
   # linker error, a solver explanation -- because the failure text
   # doesn't always contain one of the greppable keywords, or the
   # keyword line lacks the context above it that explains WHY. Tailing
   # each job's own raw log, separately, is more reliable and is what
-  # actually got used for diagnosis every time.
+  # actually got used for diagnosis every time. Default 20 lines;
+  # override with N=<lines> (make inspect/doctor <name> N=100) when the
+  # real error sits further back than the default window.
   if [ "$FAILED_RUN" -eq 1 ]; then
-    printf "${BOLD}${RED}== last 20 lines per failed job (amd64/arm64/publish) ==${RESET}\n"
+    printf "${BOLD}${RED}== last %s lines per failed job (amd64/arm64/publish) ==${RESET}\n" "$LINES"
     RAW=$(gh run view "$RUN_ID" --repo "$ORG/$REPO" --log-failed 2>/dev/null)
     JOBS=$(printf "%s\n" "$RAW" | awk -F'\t' '!seen[$1]++ {print $1}')
     while IFS= read -r job; do
@@ -147,7 +151,7 @@ if [ -n "$RUN_ID" ]; then
                   s/^[^\t]*\t[^\t]*\t[0-9T:.Z-]+ /  /;
                   s|/[^ ]*conda-bld/[^ ]*_h_env_placehold[^/]*/|\$PREFIX/|g;
                   s|/[^ ]*conda-bld/([^/ ]+)/work/|\$SRC_DIR(\1)/|g' \
-        | tail -20
+        | tail -n "$LINES"
       echo ""
     done <<< "$JOBS"
     printf "${DIM}full log: gh run view %s --repo %s/%s --log-failed | less${RESET}\n" "$RUN_ID" "$ORG" "$REPO"
