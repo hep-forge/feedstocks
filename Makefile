@@ -47,6 +47,12 @@
 #   make variant-trim KEY=<name>  Cap consumers' <name>: lists at the newest 2, no new version
 #   make root-bump VERSION=<x.y>  Alias for variant-bump KEY=root
 #   make root-trim       Alias for variant-trim KEY=root
+#   make new-feedstock NAME=<pkg> REPO=<upstream-url> [SUMMARY="..."] [LICENSE=<spdx>]
+#                        Scaffold a brand-new feedstock: starter recipe + generic
+#                        boilerplate + hep-forge CI workflow, creates the GitHub
+#                        repo, pushes, registers it as a submodule here. The
+#                        generated recipe is a STARTER -- fill in the real
+#                        version/deps/build steps by hand afterward.
 #
 # Per-feedstock usage (after 'make distribute' or cp):
 #   make forge          Install conda-smithy + tools
@@ -64,7 +70,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status retag retag-all readme-status inspect doctor rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status retag retag-all readme-status inspect doctor rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim new-feedstock
 
 # Positional shorthand: "make <target> <arg>" behaves like
 # "make <target> FEEDSTOCK=<arg>" for every target below that takes a
@@ -244,6 +250,15 @@ endif
 
 root-trim:
 	@$(MAKE) variant-trim KEY=root
+
+new-feedstock:
+ifndef NAME
+	$(error Usage: make new-feedstock NAME=<pkg> REPO=<upstream-url> [SUMMARY="..."] [LICENSE=<spdx>])
+endif
+ifndef REPO
+	$(error Usage: make new-feedstock NAME=<pkg> REPO=<upstream-url> [SUMMARY="..."] [LICENSE=<spdx>])
+endif
+	@bash scripts/new_feedstock.sh NAME=$(NAME) REPO=$(REPO) SUMMARY="$(SUMMARY)" LICENSE=$(LICENSE)
 
 # Copy this Makefile into every feedstock directory
 distribute:
