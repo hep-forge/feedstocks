@@ -1,6 +1,3 @@
-[submodule "feedstocks/lhapdf5-feedstock"]
-        path = feedstocks/lhapdf5-feedstock
-        url = git@github.com:hep-forge/lhapdf5-feedstock.git
 [submodule "feedstocks/djangoh-feedstock"]
         path = feedstocks/djangoh-feedstock
         url = git@github.com:hep-forge/djangoh-feedstock.git
@@ -27,6 +24,9 @@
 [submodule "examples/helloworld-feedstock"]
 	path = examples/helloworld-feedstock
 	url = https://github.com/hep-forge/helloworld-feedstock.git
+[submodule "feedstocks/apfel-feedstock"]
+	path = feedstocks/apfel-feedstock
+	url = https://github.com/hep-forge/apfel-feedstock.git
 [submodule "feedstocks/apfelxx-feedstock"]
 	path = feedstocks/apfelxx-feedstock
 	url = https://github.com/hep-forge/apfelxx-feedstock.git
@@ -183,3 +183,9 @@
 [submodule "feedstocks/hepmc-merger-feedstock"]
 	path = feedstocks/hepmc-merger-feedstock
 	url = git@github.com:hep-forge/hepmc-merger-feedstock.git
+[submodule "feedstocks/geant-feedstock"]
+	path = feedstocks/geant-feedstock
+	url = git@github.com:hep-forge/geant-feedstock.git
+[submodule "feedstocks/g4hepem-feedstock"]
+	path = feedstocks/g4hepem-feedstock
+	url = git@github.com:hep-forge/g4hepem-feedstock.git
