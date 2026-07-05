@@ -196,6 +196,11 @@ echo "=== Creating hep-forge/${NAME}-feedstock on GitHub ==="
 gh repo create "hep-forge/${NAME}-feedstock" --public --source="$FS" --remote=origin --push \
   --description "${SUMMARY}"
 
+# gh defaults to an https remote regardless of the org's actual git_protocol
+# setting; every other feedstock submodule here uses ssh, so match that
+# (also needed for pushing without re-auth later).
+(cd "$FS" && git remote set-url origin "git@github.com:hep-forge/${NAME}-feedstock.git")
+
 # --- register as a submodule in this meta-repo ---
 git submodule add "git@github.com:hep-forge/${NAME}-feedstock.git" "$FS"
 

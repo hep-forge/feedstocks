@@ -168,3 +168,18 @@
 [submodule "feedstocks/podio-feedstock"]
 	path = feedstocks/podio-feedstock
 	url = git@github.com:hep-forge/podio-feedstock.git
+[submodule "feedstocks/eic-smear-feedstock"]
+	path = feedstocks/eic-smear-feedstock
+	url = git@github.com:hep-forge/eic-smear-feedstock.git
+[submodule "feedstocks/covfie-feedstock"]
+	path = feedstocks/covfie-feedstock
+	url = git@github.com:hep-forge/covfie-feedstock.git
+[submodule "feedstocks/estarlight-feedstock"]
+	path = feedstocks/estarlight-feedstock
+	url = git@github.com:hep-forge/estarlight-feedstock.git
+[submodule "feedstocks/afterburner-feedstock"]
+	path = feedstocks/afterburner-feedstock
+	url = git@github.com:hep-forge/afterburner-feedstock.git
+[submodule "feedstocks/hepmc-merger-feedstock"]
+	path = feedstocks/hepmc-merger-feedstock
+	url = git@github.com:hep-forge/hepmc-merger-feedstock.git
