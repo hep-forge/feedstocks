@@ -2,10 +2,7 @@
 # One status table per feedstock: tags, the latest CI run broken down
 # by job (amd64 / arm64 / publish), what triggered it, and branches.
 #
-# A job cell shows the LATEST run's outcome (PASS/FAIL/skip/RUNNING).
-# If a leg FAILED, the cell also shows the date it last passed (e.g.
-# "FAIL(ok 06-20)") -- otherwise "FAIL" alone doesn't tell you whether
-# this is a fresh break or a week-old one.
+# A job cell shows the LATEST run's outcome: PASS/FAIL/skip/RUNNING.
 #
 # The BRANCHES column reads local remote-tracking refs (git branch -r),
 # not a live GitHub query -- deliberately, to avoid a fetch per feedstock
@@ -54,32 +51,24 @@ else
   BOLD="" DIM="" RED="" GREEN="" YELLOW="" CYAN="" RESET=""
 fi
 
-# Colorize a job conclusion into a fixed-width cell, appending a dim
-# "(ok <date>)" note on failure if we have a last-known-good date.
+# Colorize a job conclusion into a fixed-width cell
 cell() {
-  local c="$1" last_ok="$2" label
+  local c="$1"
   case "$c" in
-    success)   printf "${GREEN}%-16s${RESET}" "PASS" ;;
-    failure)
-      if [ -n "$last_ok" ] && [ "$last_ok" != "never" ]; then
-        label="FAIL(ok ${last_ok:5})"
-      else
-        label="FAIL"
-      fi
-      printf "${RED}%-16s${RESET}" "$label"
-      ;;
-    skipped)   printf "${DIM}%-16s${RESET}" "skip" ;;
-    cancelled) printf "${YELLOW}%-16s${RESET}" "CANCEL" ;;
-    running)   printf "${YELLOW}%-16s${RESET}" "RUNNING" ;;
-    "")        printf "${DIM}%-16s${RESET}" "-" ;;
-    *)         printf "${YELLOW}%-16s${RESET}" "${c:0:16}" ;;
+    success)   printf "${GREEN}%-9s${RESET}" "PASS" ;;
+    failure)   printf "${RED}%-9s${RESET}" "FAIL" ;;
+    skipped)   printf "${DIM}%-9s${RESET}" "skip" ;;
+    cancelled) printf "${YELLOW}%-9s${RESET}" "CANCEL" ;;
+    running)   printf "${YELLOW}%-9s${RESET}" "RUNNING" ;;
+    "")        printf "${DIM}%-9s${RESET}" "-" ;;
+    *)         printf "${YELLOW}%-9s${RESET}" "${c:0:9}" ;;
   esac
 }
 
-printf "${BOLD}${CYAN}%-30s  %-5s  %-14s  %-16s %-16s %-16s %-19s  %s${RESET}\n" \
+printf "${BOLD}${CYAN}%-30s  %-5s  %-14s  %-9s %-9s %-9s %-19s  %s${RESET}\n" \
   "FEEDSTOCK" "NTAGS" "LATEST TAG" "AMD64" "ARM64" "PUBLISH" "TRIGGER@REF" "BRANCHES"
 printf "${DIM}"
-printf '%0.s-' {1..150}
+printf '%0.s-' {1..130}
 printf "${RESET}\n"
 
 ANY_FAILED=0
@@ -160,23 +149,13 @@ for dir in feedstocks/*-feedstock; do
     continue
   fi
 
-  # Only fetch a last-known-good date when something on this row failed
-  # -- one extra API call, but skipped entirely for healthy feedstocks.
-  last_ok="never"
-  if [ "$row_failed" -eq 1 ]; then
-    last_ok=$(gh api "repos/$ORG/$repo/actions/workflows/autoupload.yml/runs" \
-      --jq '.workflow_runs[] | select(.conclusion=="success") | .updated_at' \
-      2>/dev/null | head -1 | cut -c1-10 || true)
-    [ -z "$last_ok" ] && last_ok="never"
-  fi
-
   [ "$ntags" = "0" ] && c_ntags="${YELLOW}" || c_ntags="${GREEN}"
   [ "$latest_tag" = "(none)" ] && c_tag="${YELLOW}" || c_tag="${RESET}"
 
   printf "%-30s  ${c_ntags}%-5s${RESET}  ${c_tag}%-14s${RESET}  " "$repo" "$ntags" "$latest_tag"
-  cell "$amd64" "$last_ok"; printf " "
-  cell "$arm64" "$last_ok"; printf " "
-  cell "$publish" "$last_ok"; printf " "
+  cell "$amd64"; printf " "
+  cell "$arm64"; printf " "
+  cell "$publish"; printf " "
   printf "%-19s  ${CYAN}%s${RESET}\n" "${trigger_src}@${ref}" "$branches"
   # Run URL on its own indented line -- opt-in (VERBOSE=1) since it's
   # rarely needed and doubles the line count of an already-long table.
