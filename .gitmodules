@@ -135,15 +135,12 @@
 [submodule "feedstocks/escalade-feedstock"]
 	path = feedstocks/escalade-feedstock
 	url = git@github.com:hep-forge/escalade-feedstock.git
-[submodule "feedstocks/frameformat-feedstock"]
-	path = feedstocks/frameformat-feedstock
-	url = git@github.com:hep-forge/frameformat-feedstock.git
+[submodule "feedstocks/framel-root-feedstock"]
+	path = feedstocks/framel-root-feedstock
+	url = git@github.com:hep-forge/framel-root-feedstock.git
 [submodule "feedstocks/framel-feedstock"]
 	path = feedstocks/framel-feedstock
 	url = git@github.com:hep-forge/framel-feedstock.git
-[submodule "feedstocks/rh5-feedstock"]
-	path = feedstocks/rh5-feedstock
-	url = git@github.com:hep-forge/rh5-feedstock.git
 [submodule "feedstocks/rkafka-feedstock"]
 	path = feedstocks/rkafka-feedstock
 	url = git@github.com:hep-forge/rkafka-feedstock.git
@@ -162,9 +159,6 @@
 [submodule "feedstocks/libdate-tz-feedstock"]
 	path = feedstocks/libdate-tz-feedstock
 	url = git@github.com:hep-forge/libdate-tz-feedstock.git
-[submodule "feedstocks/rsignal-feedstock"]
-	path = feedstocks/rsignal-feedstock
-	url = git@github.com:hep-forge/rsignal-feedstock.git
 [submodule "feedstocks/edm4hep-feedstock"]
 	path = feedstocks/edm4hep-feedstock
 	url = git@github.com:hep-forge/edm4hep-feedstock.git
