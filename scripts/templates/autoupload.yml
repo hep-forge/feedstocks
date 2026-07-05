@@ -36,7 +36,7 @@ jobs:
       # GitHub's API has no field distinguishing a human's workflow_dispatch
       # from an automated one (both are just event=workflow_dispatch from
       # whichever token dispatched them) -- so this step's NAME embeds the
-      # trigger source, which the Jobs API (and scripts/status_arch.sh) can
+      # trigger source, which the Jobs API (and scripts/feedstock_status.sh) can
       # read back. Self-declared: hep-bot-rebuild.yml passes
       # -f triggered_by=bot; anything else defaults to manual.
       - name: "Triggered by: ${{ github.event_name == 'push' && 'push' || inputs.triggered_by || 'manual' }}"

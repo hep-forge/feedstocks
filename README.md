@@ -20,7 +20,7 @@ conda install -c hep-forge -c conda-forge root root-guard rivet lhapdf pythia
 
 ## Packages
 
-The table below is generated — after a rebuild wave finishes (`make arch`
+The table below is generated — after a rebuild wave finishes (`make status`
 shows no failures), refresh it with `make readme-status` and commit. "Latest tag"
 is the feedstock's release tag; "Published" is what anaconda.org actually serves,
 with per-architecture availability.
@@ -112,7 +112,7 @@ hep-feedstocks/
 │   ├── generate_readme.py   # Regenerate a feedstock README → hep-forge badges + arch table
 │   ├── rerender_all.sh      # Sync workflow template + README across all feedstocks
 │   ├── render_all.sh        # Full conda-smithy rerender (then re-applies the two above)
-│   ├── status_arch.sh       # Latest run per feedstock: amd64 | arm64 | publish columns
+│   ├── feedstock_status.sh  # Tags/branches + latest run per feedstock: amd64 | arm64 | publish columns
 │   ├── retag_all.sh         # Move latest tags to branch tips + push (fires tag builds)
 │   ├── rename_master_to_main.sh  # One-time branch consolidation (needs admin PAT)
 │   ├── update_readme_status.py  # Refresh the status table in this README
@@ -159,14 +159,15 @@ make readme       # Regenerate all README.md files pointed at hep-forge
 make list         # List all locally built .conda packages
 make anaconda     # Upload all built packages to the hep-forge channel
 make bot-check    # Dry-run upstream version check (hep-bot)
-make status       # Table: feedstock | tags | branches (=labels) | last successful build dates
+make status       # Table: feedstock | tags | branches (=labels) | latest run split by
+                  # job (amd64 | arm64 | publish) -- failed legs show how long ago
+                  # that job last passed
 make status rivet                        # Status for one feedstock
+make status ARGS="--failed"              # Only rows with a red leg
+make status ARGS="--prune"               # Also prune stale local branch refs first
 make ci-status    # LATEST workflow run per feedstock: PASS/FAIL/RUNNING + link.
                   # Exits non-zero if anything failed — bot/cron friendly.
 make ci-status rivet                     # Same, one feedstock
-make arch                         # Latest run per feedstock, split by job: amd64 | arm64 | publish
-make arch rivet                   # Same, one feedstock
-make arch ARGS="--failed"         # Only rows with a red leg
 make inspect pythia                      # Deep dive: published versions per arch, GitHub
                   # tags + sync verdict, latest runs, error log on failure
 make retag fastjet                       # Move the latest tag to the branch tip + push
@@ -180,9 +181,9 @@ make distribute   # Copy this Makefile into every feedstock
 make debug fastjet                       # Debug one feedstock build
 ```
 
-> `make status` only shows the last *successful* build dates — a feedstock
-> whose latest run failed still shows its old green date there. Use
-> `make ci-status` or `make arch` to see failures and in-progress runs.
+> `make status` shows the latest run's per-job outcome directly (including
+> failures and how long ago each leg last passed). Use `make ci-status` for
+> just the overall run conclusion, including in-progress runs.
 
 ### Per-feedstock level (after `make distribute` or `cd feedstocks/X && make`)
 
@@ -210,7 +211,7 @@ To trigger a rebuild: `make retag <name>` — it moves the feedstock's latest ta
 to the default-branch tip and force-pushes; the tag push fires the build with the current
 recipe. (Dispatching at an *old* tag fails with "No event triggers defined in `on`":
 `workflow_dispatch` reads the workflow file at the dispatched ref, which predates the
-trigger.) Watch progress per architecture with `make arch` (`ARGS="--failed"` for
+trigger.) Watch progress per architecture with `make status` (`ARGS="--failed"` for
 only the broken rows), or get the full picture for one package — published versions per
 architecture, GitHub tags, and error details on failure — with `make inspect <name>`.
 

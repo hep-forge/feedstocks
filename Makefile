@@ -20,13 +20,13 @@
 #   make bot-check      Dry-run upstream version check (hep-bot)
 #   make distribute     Copy this Makefile into every feedstock
 #   make debug <name>   Debug one feedstock build
-#   make status [<name>]     Tags/branches + last AMD64/ARM64 build dates
-#   make status ARGS=--prune  Also prune stale local branch refs first (see script header)
-#   make ci-status [<name>]  Latest workflow run per feedstock (PASS/FAIL/RUNNING + link)
-#   make arch [<name>]  Latest run per feedstock split by job: amd64 | arm64 | publish
-#   make arch ARGS=--failed  Same, only rows with a red leg
-#                       (must be ARGS=..., not a bare --failed: make itself
+#   make status [<name>]     Tags/branches + latest run split by job: amd64 | arm64 | publish
+#                       (failed legs show how long ago that job last passed)
+#   make status ARGS=--prune   Also prune stale local branch refs first (see script header)
+#   make status ARGS=--failed  Only rows with a red leg
+#                       (must be ARGS=..., not a bare --flag: make itself
 #                       intercepts any --flag-looking word on its command line)
+#   make ci-status [<name>]  Latest workflow run per feedstock (PASS/FAIL/RUNNING + link)
 #   make retag <name>   Move latest tag to branch tip + push -> fires the tag build
 #   make retag-all       Same for every feedstock (the rebuild mechanism under tag-only CI)
 #   make readme-status   Refresh the feedstock status table in README.md from anaconda.org
@@ -63,15 +63,15 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status arch retag retag-all readme-status inspect doctor rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status retag retag-all readme-status inspect doctor rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim
 
 # Positional shorthand: "make <target> <arg>" behaves like
 # "make <target> FEEDSTOCK=<arg>" for every target below that takes a
-# package name. (arch's --failed flag flows through the same way
-# since it's passed straight to the script either way.) A plain
+# package name. (status's --prune/--failed flags flow through the same
+# way since they're passed straight to the script either way.) A plain
 # "make <target>" with no extra word is untouched -- FEEDSTOCK stays
 # unset and targets fall back to their "operate on everything" mode.
-PKG_TARGETS := render debug status ci-status arch retag inspect doctor rerun add-macos
+PKG_TARGETS := render debug status ci-status retag inspect doctor rerun add-macos
 ifneq (,$(filter $(firstword $(MAKECMDGOALS)),$(PKG_TARGETS)))
   PKG_ARG := $(word 2,$(MAKECMDGOALS))
   ifneq ($(PKG_ARG),)
@@ -119,7 +119,10 @@ anaconda:
 bot-check:
 	@python3 scripts/hep_bot/check_versions.py --dry-run
 
-# Show feedstock status: tags, last AMD64/ARM64/macOS build dates, branches (= conda labels)
+# Show feedstock status: tags, branches (= conda labels), and the
+# latest run broken down by job (amd64 | arm64 | publish) -- so you can
+# see WHICH leg broke, and (on failure) how long ago it last passed.
+# --prune / --failed via ARGS="--prune" / ARGS="--failed".
 status:
 ifdef FEEDSTOCK
 	@bash scripts/feedstock_status.sh $(FEEDSTOCK)
@@ -127,23 +130,13 @@ else
 	@bash scripts/feedstock_status.sh $(ARGS)
 endif
 
-# Latest workflow run per feedstock, including failures and in-progress runs
-# (make status only shows last SUCCESS dates). Non-zero exit if any latest
-# run failed, so bots/cron can gate on it.
+# Latest workflow run per feedstock, including failures and in-progress runs.
+# Non-zero exit if any latest run failed, so bots/cron can gate on it.
 ci-status:
 ifdef FEEDSTOCK
 	@bash scripts/ci_status.sh $(FEEDSTOCK)
 else
 	@bash scripts/ci_status.sh
-endif
-
-# Latest run per feedstock broken down by job (amd64 | arm64 | publish),
-# so you can see WHICH leg broke. --failed via ARGS="--failed".
-arch:
-ifdef FEEDSTOCK
-	@bash scripts/status_arch.sh $(FEEDSTOCK)
-else
-	@bash scripts/status_arch.sh $(ARGS)
 endif
 
 # Move the latest tag to the default-branch tip and force-push it; the tag
@@ -193,7 +186,7 @@ endif
 
 # Rebuild EVERY feedstock at its latest tag. Builds only run on tag
 # refs -- there is no branch/dev-build mode. Prefer `make retag-all` if
-# recipes changed since tagging. Follow with `make arch`.
+# recipes changed since tagging. Follow with `make status`.
 rerun-all:
 	@bash scripts/rerun_tags.sh
 
