@@ -195,3 +195,6 @@
 [submodule "feedstocks/epic-feedstock"]
 	path = feedstocks/epic-feedstock
 	url = git@github.com:hep-forge/epic-feedstock.git
+[submodule "feedstocks/npsim-feedstock"]
+	path = feedstocks/npsim-feedstock
+	url = git@github.com:hep-forge/npsim-feedstock.git
