@@ -14,8 +14,8 @@ memory) -- it's a structural, always-current view of the full feedstock set,
 recomputed from the recipes each time you run it.
 
 Usage:
-    python3 scripts/dep_graph.py                 full phase report
-    python3 scripts/dep_graph.py <pkg>            one package's deps/dependents
+    python3 scripts/dep_graph.py                 dependency tree + phase board
+    python3 scripts/dep_graph.py <pkg>            one package's dependency tree
     python3 scripts/dep_graph.py --json           machine-readable dump
 """
 import json
@@ -110,6 +110,21 @@ def print_tree(name, deps, phase, prefix="", is_last=True, is_top=True):
         print_tree(child, deps, phase, child_prefix, i == len(children) - 1, is_top=False)
 
 
+def print_board(names, phase):
+    from collections import defaultdict
+
+    max_phase = max(phase.values())
+    by_phase = defaultdict(list)
+    for p in names:
+        by_phase[phase[p]].append(p)
+
+    for ph in range(max_phase + 1):
+        pkgs = sorted(by_phase[ph])
+        print(f"=== Phase {ph} ({len(pkgs)}) ===")
+        print(", ".join(pkgs))
+        print()
+
+
 def print_full_report(names, deps, dependents, phase, cycles):
     # one tree per top-level package (nothing depends on it) -- same
     # convention as `conda tree` / `pipdeptree`: each root's own
@@ -118,9 +133,17 @@ def print_full_report(names, deps, dependents, phase, cycles):
     # legitimately repeat under each consumer, same as those tools.
     roots = sorted(p for p in names if not dependents[p])
 
+    print("DEPENDENCY TREE (one per top-level package -- nothing depends on it)")
+    print("=" * 72)
+    print()
     for r in roots:
         print_tree(r, deps, phase)
         print()
+
+    print("PHASE BOARD (same 63 packages, grouped flat by phase)")
+    print("=" * 72)
+    print()
+    print_board(names, phase)
 
     if cycles:
         print(f"WARNING: cycle(s) detected involving: {sorted(set(cycles))}")
