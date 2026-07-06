@@ -192,3 +192,6 @@
 [submodule "feedstocks/dd4hep-feedstock"]
 	path = feedstocks/dd4hep-feedstock
 	url = git@github.com:hep-forge/dd4hep-feedstock.git
+[submodule "feedstocks/epic-feedstock"]
+	path = feedstocks/epic-feedstock
+	url = git@github.com:hep-forge/epic-feedstock.git
