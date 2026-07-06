@@ -101,24 +101,32 @@ def build_graph():
     return names, deps, dependents, phase, cycles
 
 
+def print_tree(name, deps, phase, prefix="", is_last=True, is_top=True):
+    connector = "" if is_top else ("└── " if is_last else "├── ")
+    print(f"{prefix}{connector}{name} (phase {phase[name]})")
+    child_prefix = prefix if is_top else prefix + ("    " if is_last else "│   ")
+    children = deps.get(name, [])
+    for i, child in enumerate(children):
+        print_tree(child, deps, phase, child_prefix, i == len(children) - 1, is_top=False)
+
+
 def print_full_report(names, deps, dependents, phase, cycles):
-    max_phase = max(phase.values())
-    from collections import defaultdict
+    # one tree per top-level package (nothing depends on it) -- same
+    # convention as `conda tree` / `pipdeptree`: each root's own
+    # dependencies are printed nested and indented beneath it, phase
+    # noted in parens on every node. Shared subtrees (e.g. root, lhapdf)
+    # legitimately repeat under each consumer, same as those tools.
+    roots = sorted(p for p in names if not dependents[p])
 
-    by_phase = defaultdict(list)
-    for p in names:
-        by_phase[phase[p]].append(p)
-
-    for ph in range(max_phase + 1):
-        pkgs = sorted(by_phase[ph])
-        print(f"=== Phase {ph} ({len(pkgs)}) ===")
-        print(", ".join(pkgs))
+    for r in roots:
+        print_tree(r, deps, phase)
         print()
 
     if cycles:
         print(f"WARNING: cycle(s) detected involving: {sorted(set(cycles))}")
     else:
-        print(f"{len(names)} packages, {max_phase + 1} phases, no cycles.")
+        max_phase = max(phase.values())
+        print(f"{len(names)} packages, {len(roots)} top-level (nothing depends on them), {max_phase + 1} phases, no cycles.")
 
 
 def print_package(name, deps, dependents, phase, all_names):
@@ -127,19 +135,12 @@ def print_package(name, deps, dependents, phase, all_names):
         print(", ".join(all_names))
         sys.exit(1)
 
-    up = transitive(name, deps)
     down = transitive(name, dependents)
 
-    print(f"{name}  (phase {phase[name]})")
-    print()
-    print(f"directly needs ({len(deps[name])}):")
-    print("  " + (", ".join(deps[name]) if deps[name] else "(nothing internal)"))
+    print_tree(name, deps, phase)
     print()
     print(f"directly needed by ({len(dependents[name])}):")
-    print("  " + (", ".join(dependents[name]) if dependents[name] else "(nothing -- leaf consumer)"))
-    print()
-    print(f"full upstream chain ({len(up)}):")
-    print("  " + (", ".join(sorted(up)) if up else "(none)"))
+    print("  " + (", ".join(sorted(dependents[name])) if dependents[name] else "(nothing -- leaf consumer)"))
     print()
     print(f"full downstream chain ({len(down)}):")
     print("  " + (", ".join(sorted(down)) if down else "(none)"))
