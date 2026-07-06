@@ -189,3 +189,6 @@
 [submodule "feedstocks/g4hepem-feedstock"]
 	path = feedstocks/g4hepem-feedstock
 	url = git@github.com:hep-forge/g4hepem-feedstock.git
+[submodule "feedstocks/dd4hep-feedstock"]
+	path = feedstocks/dd4hep-feedstock
+	url = git@github.com:hep-forge/dd4hep-feedstock.git
