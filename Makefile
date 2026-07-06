@@ -39,6 +39,9 @@
 #                        recipe's own root:/libtorch: variant matrix cross-checked
 #                        per-arch, tag-vs-main freshness, then everything `inspect` shows
 #   make doctor <name> N=100  Same, with a longer/shorter failed-job log tail
+#   make dag             Internal dependency map: all 63 packages grouped into
+#                         phases by hep-forge-internal dependency depth
+#   make dag <name>       One package's direct + full-chain deps/dependents
 #   make rerun <name>    Rebuild one feedstock at its latest tag (real release)
 #   make rerun-all       Rebuild ALL feedstocks at their latest tags (no branch/dev builds)
 #   make add-macos <name>  Migrate one feedstock's CI to the amd64+arm64+macos-arm64 matrix workflow
@@ -70,7 +73,7 @@ ifeq ($(IS_META),1)
 # META-REPO LEVEL
 # ─────────────────────────────────────────────────────────────────────────────
 
-.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status retag retag-all readme-status inspect doctor rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim new-feedstock
+.PHONY: all forge render render-retry readme list anaconda bot-check distribute debug status ci-status retag retag-all readme-status inspect doctor dag rerun rerun-all add-macos add-macos-all variant-bump variant-trim root-bump root-trim new-feedstock
 
 # Positional shorthand: "make <target> <arg>" behaves like
 # "make <target> FEEDSTOCK=<arg>" for every target below that takes a
@@ -78,7 +81,7 @@ ifeq ($(IS_META),1)
 # way since they're passed straight to the script either way.) A plain
 # "make <target>" with no extra word is untouched -- FEEDSTOCK stays
 # unset and targets fall back to their "operate on everything" mode.
-PKG_TARGETS := render debug status ci-status retag inspect doctor rerun add-macos
+PKG_TARGETS := render debug status ci-status retag inspect doctor rerun add-macos dag
 ifneq (,$(filter $(firstword $(MAKECMDGOALS)),$(PKG_TARGETS)))
   PKG_ARG := $(word 2,$(MAKECMDGOALS))
   ifneq ($(PKG_ARG),)
@@ -171,6 +174,21 @@ ifndef FEEDSTOCK
 	$(error Usage: make inspect <name>   (e.g. make inspect pythia))
 endif
 	@N=$(N) bash scripts/inspect_feedstock.sh $(FEEDSTOCK)
+
+# Internal dependency map: parses every feedstock's requirements: block,
+# keeps only references to OTHER hep-forge packages, and groups them into
+# phases by dependency depth (phase 0 = no hep-forge deps at all, phase N
+# needs at least one phase N-1 package). No package name = full phase
+# report; a name = that package's direct deps/dependents + full up/down
+# chains. Always recomputed fresh from the recipes -- a structural view of
+# the whole feedstock set, not a hand-planned rollout sequence for any one
+# stack subset (see project memory for those, where they exist).
+dag:
+ifdef FEEDSTOCK
+	@python3 scripts/dep_graph.py $(FEEDSTOCK)
+else
+	@python3 scripts/dep_graph.py
+endif
 
 # Would the NEXT build even solve, before spending CI time to find out:
 # every hep-forge dependency's actual published architectures, this
