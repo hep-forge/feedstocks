@@ -198,3 +198,6 @@
 [submodule "feedstocks/npsim-feedstock"]
 	path = feedstocks/npsim-feedstock
 	url = git@github.com:hep-forge/npsim-feedstock.git
+[submodule "feedstocks/acts-feedstock"]
+	path = feedstocks/acts-feedstock
+	url = git@github.com:hep-forge/acts-feedstock.git
