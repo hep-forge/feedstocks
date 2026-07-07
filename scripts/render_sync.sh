@@ -92,6 +92,16 @@ if [ "$COMMIT" -eq 1 ]; then
     echo "Meta-repo: nothing to commit"
   else
     git commit -qm "render-sync: refresh README status table + submodule pointers"
-    git push -q && echo "Meta-repo: pushed"
+    # A concurrent push (manual, or another trigger) can land on main while
+    # this run was working -- retry once against the latest tip rather than
+    # failing the whole run over a transient non-fast-forward race.
+    if git push -q; then
+      echo "Meta-repo: pushed"
+    elif git pull -q --rebase && git push -q; then
+      echo "Meta-repo: pushed (after rebasing onto a concurrent update)"
+    else
+      echo "Meta-repo: push failed" >&2
+      exit 1
+    fi
   fi
 fi
