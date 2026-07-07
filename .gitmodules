@@ -222,9 +222,6 @@
 [submodule "feedstocks/oneloop-feedstock"]
 	path = feedstocks/oneloop-feedstock
 	url = git@github.com:hep-forge/oneloop-feedstock.git
-[submodule "feedstocks/qcdloop-fortran-feedstock"]
-	path = feedstocks/qcdloop-fortran-feedstock
-	url = git@github.com:hep-forge/qcdloop-fortran-feedstock.git
 [submodule "feedstocks/sherpa-feedstock"]
 	path = feedstocks/sherpa-feedstock
 	url = git@github.com:hep-forge/sherpa-feedstock.git
