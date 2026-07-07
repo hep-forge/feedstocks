@@ -327,8 +327,8 @@ jobs:
           def vkey(v):
               return [int(p) if p.isdigit() else -1 for p in re.split(r"[._-]", v)]
 
-          def keep_versions_from_recipe():
-              # {branch_label: {version, ...}}
+          def recipe_extra(key):
+              # {branch_label: {value, ...}}
               try:
                   text = open("recipe/meta.yaml").read()
               except OSError:
@@ -336,7 +336,7 @@ jobs:
               text = re.sub(r"\{%.*?%\}", "", text, flags=re.DOTALL)
               text = re.sub(r"\{\{.*?\}\}", "JINJA_VALUE", text)
               meta = yaml.safe_load(text) or {}
-              raw = (meta.get("extra", {}) or {}).get("keep_versions", {}) or {}
+              raw = (meta.get("extra", {}) or {}).get(key, {}) or {}
               if isinstance(raw, list):
                   return {"main": {str(v) for v in raw}}
               return {str(b): {str(v) for v in (vs or [])} for b, vs in raw.items()}
@@ -349,25 +349,36 @@ jobs:
           for f in data.get("files", []):
               labels_of.setdefault(f.get("version", ""), set()).update(f.get("labels", []))
           versions = [v for v in labels_of if v]
-          extra_keep = keep_versions_from_recipe()
+          keep_versions = recipe_extra("keep_versions")
+          # Opt-in per-recipe allowlist of non-numeric version strings
+          # (e.g. "beta") that count as real releases for a package
+          # versioned by name instead of semver, rather than being
+          # trimmed as junk/dev output like master/latest/an untagged
+          # dispatch normally would be:
+          #   extra:
+          #     release_tags:
+          #       main: ["beta"]
+          release_tags = recipe_extra("release_tags")
 
           # "keep" is a standalone overlay flag, not a release line.
           protect = {v for v in versions if "keep" in labels_of[v]}
 
           # Every other label is a branch/release line, trimmed on its own:
-          # only numeric versions count as releases for that branch (junk
-          # like master/latest/beta trims away like a dev build); a branch
-          # with no numeric release yet keeps its newest non-dev version.
+          # only numeric versions (or this recipe's own release_tags)
+          # count as releases for that branch -- junk like master/latest
+          # trims away like a dev build); a branch with no numeric release
+          # yet keeps its newest non-dev version.
           branch_labels = set()
           for v in versions:
               branch_labels |= (labels_of[v] - {"keep"})
           for branch in branch_labels:
               branch_versions = [v for v in versions if branch in labels_of[v]]
+              allowed_tags = release_tags.get(branch, set())
               releases = sorted(
-                  (v for v in branch_versions if "dev" not in v and re.match(r"^\d", v)),
+                  (v for v in branch_versions if "dev" not in v and (re.match(r"^\d", v) or v in allowed_tags)),
                   key=vkey, reverse=True)
               protect |= set(releases[:keep_n])
-              protect |= extra_keep.get(branch, set()) & set(branch_versions)
+              protect |= keep_versions.get(branch, set()) & set(branch_versions)
               if not releases:
                   fallback = [v for v in branch_versions if "dev" not in v]
                   if fallback:
