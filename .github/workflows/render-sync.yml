@@ -46,9 +46,15 @@ jobs:
         run: |
           git config --global user.name "hep-bot"
           git config --global user.email "hep-bot@users.noreply.github.com"
-          # .gitmodules uses SSH remotes; rewrite to token-authenticated HTTPS
-          git config --global url."https://x-access-token:${HEP_BOT_TOKEN}@github.com/".insteadOf "git@github.com:"
-          git config --global url."https://x-access-token:${HEP_BOT_TOKEN}@github.com/".insteadOf --add "https://github.com/"
+          # .gitmodules mixes SSH and HTTPS remotes across entries; rewrite
+          # both forms to token-authenticated HTTPS. `--add` must come
+          # right after `git config`, not after the key -- putting it after
+          # the key (as this used to) makes git treat "--add" itself as the
+          # value, silently dropping the second insteadOf entry and leaving
+          # every https://-scheme submodule unauthenticated (manifests as
+          # "fatal: could not read Username for 'https://github.com'").
+          git config --global --add url."https://x-access-token:${HEP_BOT_TOKEN}@github.com/".insteadOf "git@github.com:"
+          git config --global --add url."https://x-access-token:${HEP_BOT_TOKEN}@github.com/".insteadOf "https://github.com/"
 
       - name: Checkout feedstock submodules
         run: git submodule update --init --depth 1
