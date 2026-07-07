@@ -2,6 +2,7 @@ name: Render & README Sync
 
 # Keeps the whole fleet consistent without manual steps:
 #   - every feedstock gets the current scripts/templates/autoupload.yml
+#     and scripts/templates/hep-bot-comment.yml
 #   - every feedstock README is regenerated with hep-forge badges/links
 #     and per-architecture publication state
 #   - this repo's README.md status table (tag vs published per arch) is
@@ -17,6 +18,7 @@ on:
     branches: [main]
     paths:
       - scripts/templates/autoupload.yml
+      - scripts/templates/hep-bot-comment.yml
       - scripts/generate_readme.py
       - scripts/update_readme_status.py
       - scripts/rerender_all.sh

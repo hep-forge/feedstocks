@@ -9,6 +9,7 @@ ORG="${1:-hep-forge}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SCRIPT="$ROOT/scripts/generate_readme.py"
 TEMPLATE="$ROOT/scripts/templates/autoupload.yml"
+COMMENT_TEMPLATE="$ROOT/scripts/templates/hep-bot-comment.yml"
 
 cd "$ROOT"
 
@@ -18,6 +19,8 @@ for dir in feedstocks/*-feedstock; do
     if [ -d "$dir/.github/workflows" ]; then
         cp "$TEMPLATE" "$dir/.github/workflows/autoupload.yml"
         echo "Synced .github/workflows/autoupload.yml"
+        cp "$COMMENT_TEMPLATE" "$dir/.github/workflows/hep-bot-comment.yml"
+        echo "Synced .github/workflows/hep-bot-comment.yml"
     fi
     python3 "$SCRIPT" "$dir" "$ORG"
 done

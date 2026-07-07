@@ -41,11 +41,12 @@ bash scripts/rerender_all.sh hep-forge | grep -v "^Synced\|^Updated" || true
 PUSHED=0
 for dir in feedstocks/*-feedstock; do
   [ -e "$dir/.git" ] || continue
-  git -C "$dir" status --porcelain -- .github/workflows/autoupload.yml README.md \
+  git -C "$dir" status --porcelain -- .github/workflows/autoupload.yml \
+    .github/workflows/hep-bot-comment.yml README.md \
     | grep -q . || continue
   branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD)
   [ "$branch" = "HEAD" ] && { echo "SKIP $dir (detached HEAD)"; continue; }
-  git -C "$dir" add .github/workflows/autoupload.yml README.md
+  git -C "$dir" add .github/workflows/autoupload.yml .github/workflows/hep-bot-comment.yml README.md
   git -C "$dir" commit -qm "render: sync CI workflow + hep-forge README [render-sync]" \
     || continue
   if git -C "$dir" push -q; then
