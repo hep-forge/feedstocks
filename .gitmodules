@@ -198,3 +198,48 @@
 [submodule "feedstocks/numdiff-feedstock"]
 	path = feedstocks/numdiff-feedstock
 	url = git@github.com:hep-forge/numdiff-feedstock.git
+[submodule "feedstocks/collier-feedstock"]
+	path = feedstocks/collier-feedstock
+	url = git@github.com:hep-forge/collier-feedstock.git
+[submodule "feedstocks/cuttools-feedstock"]
+	path = feedstocks/cuttools-feedstock
+	url = git@github.com:hep-forge/cuttools-feedstock.git
+[submodule "feedstocks/emela-feedstock"]
+	path = feedstocks/emela-feedstock
+	url = git@github.com:hep-forge/emela-feedstock.git
+[submodule "feedstocks/iregi-feedstock"]
+	path = feedstocks/iregi-feedstock
+	url = git@github.com:hep-forge/iregi-feedstock.git
+[submodule "feedstocks/looptools-feedstock"]
+	path = feedstocks/looptools-feedstock
+	url = git@github.com:hep-forge/looptools-feedstock.git
+[submodule "feedstocks/mpfun90-feedstock"]
+	path = feedstocks/mpfun90-feedstock
+	url = git@github.com:hep-forge/mpfun90-feedstock.git
+[submodule "feedstocks/ninja-hep-ph-feedstock"]
+	path = feedstocks/ninja-hep-ph-feedstock
+	url = git@github.com:hep-forge/ninja-hep-ph-feedstock.git
+[submodule "feedstocks/oneloop-feedstock"]
+	path = feedstocks/oneloop-feedstock
+	url = git@github.com:hep-forge/oneloop-feedstock.git
+[submodule "feedstocks/qcdloop-fortran-feedstock"]
+	path = feedstocks/qcdloop-fortran-feedstock
+	url = git@github.com:hep-forge/qcdloop-fortran-feedstock.git
+[submodule "feedstocks/sherpa-feedstock"]
+	path = feedstocks/sherpa-feedstock
+	url = git@github.com:hep-forge/sherpa-feedstock.git
+[submodule "feedstocks/herwig7-feedstock"]
+	path = feedstocks/herwig7-feedstock
+	url = git@github.com:hep-forge/herwig7-feedstock.git
+[submodule "feedstocks/gosam-feedstock"]
+	path = feedstocks/gosam-feedstock
+	url = git@github.com:hep-forge/gosam-feedstock.git
+[submodule "feedstocks/pepper-feedstock"]
+	path = feedstocks/pepper-feedstock
+	url = git@github.com:hep-forge/pepper-feedstock.git
+[submodule "feedstocks/delphes-feedstock"]
+	path = feedstocks/delphes-feedstock
+	url = git@github.com:hep-forge/delphes-feedstock.git
+[submodule "feedstocks/combiner-feedstock"]
+	path = feedstocks/combiner-feedstock
+	url = git@github.com:hep-forge/combiner-feedstock.git
