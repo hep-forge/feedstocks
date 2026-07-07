@@ -41,12 +41,16 @@ bash scripts/rerender_all.sh hep-forge | grep -v "^Synced\|^Updated" || true
 PUSHED=0
 for dir in feedstocks/*-feedstock; do
   [ -e "$dir/.git" ] || continue
-  git -C "$dir" status --porcelain -- .github/workflows/autoupload.yml \
+  git -C "$dir" status --porcelain --ignored=matching -- .github/workflows/autoupload.yml \
     .github/workflows/hep-bot-comment.yml README.md \
     | grep -q . || continue
   branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD)
   [ "$branch" = "HEAD" ] && { echo "SKIP $dir (detached HEAD)"; continue; }
-  git -C "$dir" add .github/workflows/autoupload.yml .github/workflows/hep-bot-comment.yml README.md
+  # -f: hep-bot-comment.yml is a brand-new file and conda-smithy's generated
+  # .gitignore (`*` with only `!.github`, not `!/.github/workflows/**`) blocks
+  # it from ever being staged otherwise -- autoupload.yml/README.md are
+  # already tracked from initial scaffolding so gitignore doesn't affect them.
+  git -C "$dir" add -f .github/workflows/autoupload.yml .github/workflows/hep-bot-comment.yml README.md
   git -C "$dir" commit -qm "render: sync CI workflow + hep-forge README [render-sync]" \
     || continue
   if git -C "$dir" push -q; then
