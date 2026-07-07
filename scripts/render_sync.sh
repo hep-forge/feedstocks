@@ -23,15 +23,24 @@ cd "$(dirname "$0")/.."
 COMMIT=0
 [ "${1:-}" = "--commit" ] && COMMIT=1
 
+# Dirs whose local HEAD must NOT be trusted for step 5's pointer bump --
+# either the fetch/checkout in step 1 failed, or (see step 3) a render
+# commit was created locally but its push failed. Bumping the meta-repo's
+# gitlink to a commit that only exists on this ephemeral runner is exactly
+# how the "orphaned submodule pointer" bug keeps recurring: the commit
+# vanishes once the runner is torn down, leaving hep-bot-check/render-sync's
+# own next submodule checkout unable to find it.
+UNSAFE=()
+
 # -- 1. every submodule on its default branch tip --------------------------
 for dir in feedstocks/*-feedstock; do
   [ -e "$dir/.git" ] || continue
   def=$(git -C "$dir" ls-remote --symref origin HEAD 2>/dev/null \
     | awk '/^ref:/{sub("refs/heads/","",$2); print $2}')
   def="${def:-main}"
-  git -C "$dir" fetch -q origin "$def" 2>/dev/null || { echo "SKIP $dir (fetch failed)"; continue; }
+  git -C "$dir" fetch -q origin "$def" 2>/dev/null || { echo "SKIP $dir (fetch failed)"; UNSAFE+=("$dir"); continue; }
   git -C "$dir" checkout -q -B "$def" "origin/$def" 2>/dev/null \
-    || { echo "SKIP $dir (checkout failed — dirty tree?)"; continue; }
+    || { echo "SKIP $dir (checkout failed — dirty tree?)"; UNSAFE+=("$dir"); continue; }
 done
 
 # -- 2. render: workflow template + hep-forge READMEs ----------------------
@@ -45,7 +54,7 @@ for dir in feedstocks/*-feedstock; do
     .github/workflows/hep-bot-comment.yml README.md \
     | grep -q . || continue
   branch=$(git -C "$dir" rev-parse --abbrev-ref HEAD)
-  [ "$branch" = "HEAD" ] && { echo "SKIP $dir (detached HEAD)"; continue; }
+  [ "$branch" = "HEAD" ] && { echo "SKIP $dir (detached HEAD)"; UNSAFE+=("$dir"); continue; }
   # -f: hep-bot-comment.yml is a brand-new file and conda-smithy's generated
   # .gitignore (`*` with only `!.github`, not `!/.github/workflows/**`) blocks
   # it from ever being staged otherwise -- autoupload.yml/README.md are
@@ -58,6 +67,7 @@ for dir in feedstocks/*-feedstock; do
     PUSHED=$((PUSHED+1))
   else
     echo "PUSH-FAIL $dir"
+    UNSAFE+=("$dir")
   fi
 done
 echo "Feedstocks pushed: $PUSHED"
@@ -67,7 +77,17 @@ python3 scripts/update_readme_status.py
 
 # -- 5. meta-repo commit -----------------------------------------------------
 if [ "$COMMIT" -eq 1 ]; then
-  git add README.md feedstocks
+  git add README.md
+  for dir in feedstocks/*-feedstock; do
+    [ -e "$dir/.git" ] || continue
+    skip=0
+    for u in "${UNSAFE[@]:-}"; do [ "$u" = "$dir" ] && skip=1 && break; done
+    [ "$skip" -eq 1 ] && continue
+    git add "$dir"
+  done
+  if [ "${#UNSAFE[@]}" -gt 0 ]; then
+    echo "Not bumping pointers for (fetch/checkout/push failed): ${UNSAFE[*]}"
+  fi
   if git diff --cached --quiet; then
     echo "Meta-repo: nothing to commit"
   else
