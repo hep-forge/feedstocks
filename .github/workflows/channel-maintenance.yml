@@ -17,10 +17,12 @@ name: Anaconda Channel Maintenance
 #   2. Version trim, channel-wide, INDEPENDENTLY PER BRANCH/LABEL: one
 #      branch = one Anaconda label (main, legacy, eic, cern, old, ...);
 #      each keeps its own newest TRIM_KEEP non-dev versions plus its own
-#      extra.keep_versions entries from that feedstock's recipe/meta.yaml
-#      (keyed by branch, e.g. root-feedstock pins old ROOT releases
-#      still required by downstream conda_build_config.yaml `root:`
-#      variants -- `extra: {keep_versions: {main: ["6.34.10"]}}`). The
+#      extra.lts entries from that feedstock's recipe/meta.yaml -- "lts"
+#      as in: Long-Term-Supported in *this channel*, never auto-trimmed
+#      (not to be confused with any upstream software's own "LTS"
+#      release naming), keyed by branch, e.g. root-feedstock pins old
+#      ROOT releases still required by downstream conda_build_config.yaml
+#      `root:` variants -- `extra: {lts: {main: ["6.34.10"]}}`. The
 #      explicit `keep` label is a standalone overlay, not a branch: any
 #      version carrying it is protected everywhere, applied per-version
 #      with `anaconda copy <org>/<pkg>/<version> --from-label main --to-label keep`.
@@ -48,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # needed so the trim step can read each feedstock's
-      # recipe/meta.yaml extra.keep_versions
+      # recipe/meta.yaml extra.lts
       - name: Checkout with submodules
         uses: actions/checkout@v4
         with:
@@ -110,7 +112,7 @@ jobs:
           def vkey(v):
               return [int(p) if p.isdigit() else -1 for p in re.split(r"[._-]", v)]
 
-          def keep_versions_from_recipe(pkg):
+          def lts_from_recipe(pkg):
               # {branch_label: {version, ...}}
               try:
                   text = open(f"feedstocks/{pkg}-feedstock/recipe/meta.yaml").read()
@@ -119,7 +121,7 @@ jobs:
               text = re.sub(r"\{%.*?%\}", "", text, flags=re.DOTALL)
               text = re.sub(r"\{\{.*?\}\}", "JINJA_VALUE", text)
               meta = yaml.safe_load(text) or {}
-              raw = (meta.get("extra", {}) or {}).get("keep_versions", {}) or {}
+              raw = (meta.get("extra", {}) or {}).get("lts", {}) or {}
               if isinstance(raw, list):
                   return {"main": {str(v) for v in raw}}
               return {str(b): {str(v) for v in (vs or [])} for b, vs in raw.items()}
@@ -171,7 +173,7 @@ jobs:
                   key=vkey, reverse=True)
               protect = set(releases[:KEEP_N])
               protect |= {v for v in versions if labels_of[v] - {"main", "master"}}
-              protect |= keep_versions_from_recipe(pkg) & set(versions)
+              protect |= lts_from_recipe(pkg) & set(versions)
               if not releases:
                   fallback = [v for v in versions if "dev" not in v]
                   if fallback:
