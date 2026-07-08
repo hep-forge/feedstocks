@@ -386,6 +386,54 @@ its partner(s): `make variant-bump KEY=root VERSION=6.40 PAIR="libtorch=2.8.0"`.
 
 This commits and pushes each affected feedstock directly.
 
+### Legacy compatibility: pinning the compiler and glibc floor
+
+Every compiled feedstock should explicitly pin, in its own
+`recipe/conda_build_config.yaml`:
+
+```yaml
+c_stdlib:
+  - sysroot                  # [linux]
+c_stdlib_version:
+  - 2.17                     # [linux] -- oldest broadly-supported glibc baseline
+
+c_compiler_version:
+  - 14                       # (and cxx_compiler_version / fortran_compiler_version)
+```
+
+**Why:** conda-forge periodically bumps its own *global* default sysroot
+and compiler versions. A feedstock that doesn't pin these explicitly
+floats along with whatever conda-forge's current default happens to be
+on the day it's built — so the same recipe can silently start requiring
+a newer glibc/GCC than it did last month, with no commit in this repo
+recording that the compatibility floor moved. That's what forces a
+reactive full-DAG rebuild later (once someone notices packages have
+drifted out of sync with each other, or a package fails on an older
+host than it used to support) instead of a deliberate, one-line version
+bump when *we* decide to move the floor.
+
+Pinning is a promise, and a build can still break it independently of
+the pin: `make check-glibc` downloads each package's latest published
+build and flags any `.so` requiring a newer GLIBC symbol than the pin
+promises. A build.sh that overwrites `CFLAGS`/`CXXFLAGS` instead of
+appending to them, or that runs a project's stale bundled `./configure`
+instead of regenerating it with conda's own autotools
+(`autoreconf --install --force`), can let the build host's own (newer)
+glibc headers leak in regardless of what the pin says — e.g. GCC's C23
+`strtol`/`atoi` redirect pulls in a `GLIBC_2.38` symbol version if no
+`-std=` is pinned, even when `c_stdlib_version: 2.17` is set correctly.
+This was found and fixed in `lhapdf-feedstock` (2026-07-08); a repo-wide
+`make check-glibc` audit the same day found ~20 further feedstocks with
+the same class of leak, and ~40 with no explicit `c_compiler_version`
+pin at all (including `root-feedstock`) — cleanup in progress.
+
+**Full flexibility is preserved**: this is a plain per-feedstock YAML
+value, not a repo-wide lock. Anything that genuinely needs a newer
+baseline (a real C++20 feature, a dependency that dropped old-glibc
+support) pins forward on its own, without dragging the rest of the tree
+along — the same override mechanism `root`'s rolling version window
+above already uses for its own variant matrix.
+
 ### Rebuild order (DAG)
 
 Rebuild in tier order; publish each tier before starting the next:
