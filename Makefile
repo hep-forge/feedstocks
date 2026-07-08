@@ -20,8 +20,11 @@
 #   make bot-check      Dry-run upstream version check (hep-bot)
 #   make distribute     Copy this Makefile into every feedstock
 #   make debug <name>   Debug one feedstock build
-#   make status [<name>]     Tags/branches + latest run split by job: amd64 | arm64 | publish
+#   make status [<name>]     Anaconda.org published SIZE + labels/versions, tags,
+#                       latest run split by job: amd64 | arm64 | publish
 #                       (failed legs show how long ago that job last passed)
+#                       footer: total tags/size across all rows, how many
+#                       are failing vs. never published to anaconda.org
 #   make status ARGS=--prune   Also prune stale local branch refs first (see script header)
 #   make status ARGS=--failed  Only rows with a red leg
 #                       (must be ARGS=..., not a bare --flag: make itself
@@ -31,8 +34,9 @@
 #   make retag <name>   Move latest tag to branch tip + push -> fires the tag build
 #   make retag-all       Same for every feedstock (the rebuild mechanism under tag-only CI)
 #   make readme-status   Refresh the feedstock status table in README.md from anaconda.org
-#   make inspect <name>  Deep-dive one package: published versions per arch,
-#                        GitHub tags + sync verdict, latest runs, error log on failure
+#   make inspect <name>  Deep-dive one package: published versions per arch with
+#                        SIZE + labels (for spotting cleanup targets), GitHub tags
+#                        + sync verdict, latest runs, error log on failure
 #   make inspect <name> N=100  Same, but show the last 100 lines per failed job (default 20)
 #   make doctor <name>   Diagnose BEFORE retagging: hep-forge dependencies actually
 #                        published on every arch this package builds for, this
@@ -165,6 +169,18 @@ retag-all:
 # version + per-arch state from anaconda.org). Run AFTER builds finish.
 readme-status:
 	@python3 scripts/update_readme_status.py
+
+# Audit published packages for GLIBC symbol-version leaks: downloads each
+# package's latest linux-64 build, checks every real .so for the highest
+# GLIBC_x.y symbol it references, and flags anything above that
+# feedstock's own c_stdlib_version pin (default 2.17) -- the exact bug
+# class found in lhapdf-feedstock (2026-07-08): a stale bundled
+# ./configure + an overwritten (not appended) CFLAGS let a newer host
+# glibc's headers leak in, so the resulting package only runs on hosts
+# at least that new. No package name = every feedstock (slow, downloads
+# a lot); a name/list = just those. Read-only, changes nothing.
+check-glibc:
+	@python3 scripts/check_glibc.py $(FEEDSTOCK)
 
 # Everything about ONE package in a single view: anaconda versions per
 # arch, GitHub tags with a tag<->published sync verdict, recent workflow
