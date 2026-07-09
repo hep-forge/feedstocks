@@ -1,8 +1,14 @@
 # Dependency graph for hep-forge feedstocks.
 # auto_update: false means hep-bot never bumps this package automatically.
+#
+# depends_on lists are derived from each feedstock's own recipe/meta.yaml
+# requirements (host/run/build), plus the conventional root -> root-guard
+# pairing (root-guard is a channel-isolation gate, not a literal package
+# requirement, so it never shows up in a meta.yaml grep -- add it manually
+# alongside root wherever a recipe pins root directly).
 
 root:
-  depends_on: []
+  depends_on: [pythia]    # ROOT's optional PYTHIA8 integration
   auto_update: false    # manually versioned; root-guard handles channel isolation
 
 root-guard:
@@ -16,7 +22,7 @@ fastjet-contrib:
   depends_on: [fastjet]
 
 hepmc:
-  depends_on: []
+  depends_on: [pythia, root, root-guard]
 
 lhapdf:
   depends_on: []
@@ -28,7 +34,7 @@ hoppet:
   depends_on: [lhapdf]
 
 applgrid:
-  depends_on: [lhapdf, fastjet]
+  depends_on: [fastnlo, hoppet, lhapdf, root, root-guard]
 
 apfel:
   depends_on: [lhapdf]
@@ -37,7 +43,7 @@ apfelxx:
   depends_on: [lhapdf]
 
 apfelgrid:
-  depends_on: [apfel, lhapdf, applgrid]
+  depends_on: [apfel, lhapdf, applgrid, root, root-guard]
 
 qcdnum:
   depends_on: []
@@ -52,7 +58,7 @@ pineappl:
   depends_on: []
 
 pythia:
-  depends_on: [lhapdf, hepmc]
+  depends_on: []
 
 rivet:
   depends_on: [fastjet, fastjet-contrib, hepmc, yoda, root, root-guard]
@@ -61,14 +67,27 @@ fastnlo:
   depends_on: [lhapdf, hoppet, fastjet, qcdnum, yoda, root, root-guard]
 
 rapgap:
-  depends_on: [rivet, lhapdf, pythia, hepmc]
+  depends_on: [rivet, lhapdf, pythia, hepmc, root, root-guard]
 
 xfitter:
   depends_on: [root, root-guard, lhapdf, applgrid, apfelgrid, apfel, apfelxx,
-               pineappl, qcdnum, hoppet]
+               pineappl, qcdnum, dyturbo, hathor, ploughshare]
 
 xfitter-dev:
-  depends_on: [xfitter]
+  depends_on: [root, root-guard, lhapdf, applgrid, apfelgrid, apfel, apfelxx,
+               pineappl, qcdnum, dyturbo, hathor, ploughshare]
 
 nnpdf:
-  depends_on: [lhapdf, pineappl]
+  depends_on: [lhapdf, pineappl, eko]
+
+hepmc-merger:
+  depends_on: [hepmc, root, root-guard]
+
+afterburner:
+  depends_on: [hepmc, root, root-guard]
+
+eic-smear:
+  depends_on: [hepmc, root, root-guard]
+
+escalade:
+  depends_on: [root, root-guard, root-plus]

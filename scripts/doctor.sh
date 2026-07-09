@@ -110,27 +110,41 @@ for dep in sorted(reqs):
     if not ok:
         problems.append(f"WARN   {line}")
 
-variant_lines = []
-for key in ("root", "libtorch"):
-    variants = cbc.get(key)
-    if not variants:
-        continue
-    by_ver = published(key if key == "root" else "root-plus")
-    if key != "root":
+# Boilerplate build-toolchain axes -- never a hep-forge package name, so
+# never worth cross-checking against anaconda.org. Anything else in this
+# recipe's own conda_build_config.yaml is presumed to be a keystone
+# dependency pin (like root: or, in future, xfitter:) and gets checked
+# generically below -- no hardcoded key list to keep in sync by hand.
+BOILERPLATE_KEYS = {
+    "c_compiler", "c_compiler_version", "cxx_compiler", "cxx_compiler_version",
+    "c_stdlib", "c_stdlib_version", "fortran_compiler", "fortran_compiler_version",
+    "libgcc_version", "libstdcxx_version", "libgcc_ng_version", "libstdcxx_ng_version",
+    "libgomp_version", "packages", "python", "zip_keys", "is_python_min",
+    "macosx_deployment_target", "target_platform",
+}
+
+variant_lines = []  # (key, mark, line)
+for key in sorted(k for k in cbc if k not in BOILERPLATE_KEYS and isinstance(cbc.get(k), list)):
+    variants = cbc[key]
+    by_ver = published(key)
+    if by_ver is None:
+        # Not a directly-published hep-forge package -- e.g. libtorch is
+        # vendored inside root-plus's build string, not its own package.
+        # Nothing to check it against, so skip rather than guess.
         continue
     for rv in variants:
-        matches = sorted((v for v in (by_ver or {}) if v.startswith(str(rv))), key=vkey)
+        matches = sorted((v for v in by_ver if v.startswith(str(rv))), key=vkey)
         if not matches:
-            variant_lines.append(("MISSING", f"{key} {rv}.*  -- nothing published at all"))
+            variant_lines.append((key, "MISSING", f"{rv}.*  -- nothing published at all"))
             problems.append(f"MISSING  {key} {rv}.* -- nothing published at all")
             continue
         for v in matches:
             archs = sorted(a for a in by_ver[v] if a)
             if len(archs) >= 2:
-                variant_lines.append(("OK", f"{key} {rv} -> {v}: {archs}"))
+                variant_lines.append((key, "OK", f"{rv} -> {v}: {archs}"))
             else:
                 missing = "linux-aarch64" if "linux-aarch64" not in archs else "linux-64"
-                variant_lines.append(("WARN", f"{key} {rv} -> {v}: {archs}  (missing {missing}!)"))
+                variant_lines.append((key, "WARN", f"{rv} -> {v}: {archs}  (missing {missing}!)"))
                 problems.append(f"WARN   {key} {rv} -> {v}: {archs} (missing {missing}!)")
 
 QUIET = os.environ.get("DOCTOR_QUIET") == "1"
@@ -143,16 +157,77 @@ else:
     for mark, line in dep_lines:
         print(f"  {mark}   {line}")
     if variant_lines:
-        for key in ("root", "libtorch"):
-            keyed = [l for m, l in variant_lines if l.startswith(key + " ")]
-            if not keyed:
-                continue
+        for key in sorted({k for k, m, l in variant_lines}):
             print(f"  -- {key}: variant matrix (this recipe's conda_build_config.yaml) --")
-            for mark, line in variant_lines:
-                if line.startswith(key + " "):
-                    print(f"     {mark:<8} {line}")
+            for k, mark, line in variant_lines:
+                if k == key:
+                    print(f"     {mark:<8} {key} {line}")
 
 sys.exit(1 if problems else 0)
+PYEOF
+}
+
+# Provider-side check: which OTHER feedstocks pin a specific
+# version-line of $1 via their own conda_build_config.yaml -- the live
+# equivalent of a hand-maintained "keep these versions" comment (which
+# goes stale: root-feedstock's meta.yaml comment was already missing
+# afterburner/eic-smear/hepmc-merger). Works for any keystone package,
+# not just root -- e.g. this lights up for xfitter the day something
+# pins an xfitter: version line in its conda_build_config.yaml.
+reverse_dependents() {
+  local pkg="$1"
+  PKG="$pkg" ORG="$ORG" python3 <<'PYEOF'
+import glob, json, os, re, urllib.request
+from pathlib import Path
+
+PKG = os.environ["PKG"]
+ORG = os.environ["ORG"]
+
+def strip_jinja(text):
+    text = re.sub(r"\{%.*?%\}", "", text, flags=re.DOTALL)
+    text = re.sub(r"\{\{.*?\}\}", "JINJA", text)
+    return text
+
+def load_yaml(path):
+    import yaml
+    try:
+        text = Path(path).read_text()
+    except OSError:
+        return {}
+    try:
+        return yaml.safe_load(strip_jinja(text)) or {}
+    except yaml.YAMLError:
+        return {}
+
+def published(pkg):
+    try:
+        with urllib.request.urlopen(f"https://api.anaconda.org/package/{ORG}/{pkg}", timeout=15) as r:
+            d = json.load(r)
+    except Exception:
+        return None
+    by_ver = {}
+    for f in d.get("files", []):
+        by_ver.setdefault(f.get("version", ""), set()).add(f.get("attrs", {}).get("subdir"))
+    return by_ver
+
+dependents = []
+for f in sorted(glob.glob("feedstocks/*-feedstock/recipe/conda_build_config.yaml")):
+    dep_pkg = Path(f).parent.parent.name[:-len("-feedstock")]
+    if dep_pkg == PKG:
+        continue
+    variants = load_yaml(f).get(PKG)
+    if isinstance(variants, list) and variants:
+        dependents.append((dep_pkg, variants))
+
+if not dependents:
+    print(f"  (nothing currently pins a specific {PKG} version-line)")
+else:
+    by_ver = published(PKG) or {}
+    for dep_pkg, variants in dependents:
+        for rv in variants:
+            matches = [v for v in by_ver if v.startswith(str(rv))]
+            note = "" if matches else "  -- nothing published, would break a fresh install/rebuild!"
+            print(f"  {'OK' if matches else 'MISSING':<8} {dep_pkg:<18} pins {PKG} {rv}.*{note}")
 PYEOF
 }
 
@@ -220,6 +295,10 @@ DIR="feedstocks/$REPO"
 
 printf "${BOLD}${CYAN}== %s: dependency consistency ==${RESET}\n" "$PKG"
 check_one "$DIR" "$PKG"
+
+echo ""
+printf "${BOLD}${CYAN}== %s: who pins a specific version-line of this package ==${RESET}\n" "$PKG"
+reverse_dependents "$PKG"
 
 echo ""
 printf "${BOLD}${CYAN}== %s: tag freshness ==${RESET}\n" "$PKG"

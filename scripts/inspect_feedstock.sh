@@ -50,25 +50,40 @@ from collections import defaultdict
 def vkey(v):
     return [int(p) if p.isdigit() else -1 for p in re.split(r"[._-]", v)]
 
+def human(n):
+    for unit in ("B", "KB", "MB"):
+        if n < 1024:
+            return f"{n:.0f}{unit}" if unit == "B" else f"{n:.1f}{unit}"
+        n /= 1024
+    return f"{n:.1f}GB"
+
 url = "https://api.anaconda.org/package/{}/{}".format(os.environ["ORG"], os.environ["PKG"])
 try:
     with urllib.request.urlopen(url, timeout=20) as resp:
         d = json.load(resp)
 except Exception:
     raise SystemExit
-by_ver = defaultdict(lambda: {"subdirs": set(), "date": ""})
+by_ver = defaultdict(lambda: {"subdirs": set(), "date": "", "size": 0, "labels": set()})
 for f in d.get("files", []):
     v = f.get("version", "?")
-    by_ver[v]["subdirs"].add(f.get("attrs", {}).get("subdir", "?"))
-    by_ver[v]["date"] = max(by_ver[v]["date"], (f.get("upload_time") or "")[:10])
+    info = by_ver[v]
+    info["subdirs"].add(f.get("attrs", {}).get("subdir", "?"))
+    info["date"] = max(info["date"], (f.get("upload_time") or "")[:10])
+    info["size"] += f.get("size") or 0
+    info["labels"].update(f.get("labels") or ["main"])
 if not by_ver:
     raise SystemExit
 releases = [v for v in by_ver if "dev" not in v] or list(by_ver)
 latest = max(releases, key=vkey)
+total_size = sum(info["size"] for info in by_ver.values())
+print("  {:<16} {:<12} {:<8} {:<18} {}".format("VERSION", "DATE", "SIZE", "LABELS", "ARCH"))
 for v in sorted(by_ver, key=vkey, reverse=True)[:12]:
     info = by_ver[v]
-    mark = " <- latest" if v == latest else ""
-    print("  {:<18} {:<12} {}{}".format(v, info["date"], ", ".join(sorted(info["subdirs"])), mark))
+    mark = "  <- latest" if v == latest else ""
+    print("  {:<16} {:<12} {:<8} {:<18} {}{}".format(
+        v, info["date"], human(info["size"]),
+        ",".join(sorted(info["labels"])), ",".join(sorted(info["subdirs"])), mark))
+print("  {:<16} {:<12} {:<8}".format("", "TOTAL", human(total_size)))
 print("LATEST " + latest)
 PYEOF
 )
