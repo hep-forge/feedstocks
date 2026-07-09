@@ -189,3 +189,19 @@ jobs:
                   print(f"\nERROR: tier {t} had {len(failed)} failed run(s); aborting remaining tiers.")
                   sys.exit(1)
           PYEOF
+
+      - name: Refresh README status table
+        if: inputs.dry_run != 'true'
+        env:
+          HEP_BOT_TOKEN: ${{ secrets.HEP_BOT_TOKEN }}
+        run: |
+          git config user.name "hep-bot"
+          git config user.email "hep-bot@users.noreply.github.com"
+          python3 scripts/update_readme_status.py
+          if git diff --quiet -- README.md; then
+            echo "README.md: nothing to update"
+          else
+            git add README.md
+            git commit -qm "docs: refresh feedstock status table after DAG rebuild"
+            git push "https://x-access-token:${HEP_BOT_TOKEN}@github.com/hep-forge/hep-feedstocks.git" HEAD:main
+          fi

@@ -92,4 +92,9 @@ done
 echo ""
 echo "Triggered: $TRIGGERED feedstocks"
 echo "Skipped:   $SKIPPED feedstocks"
-[ "$DRY_RUN" -eq 1 ] && echo "(dry-run — nothing was actually triggered)" || true
+if [ "$DRY_RUN" -eq 1 ]; then
+  echo "(dry-run — nothing was actually triggered)"
+elif [ "$TRIGGERED" -gt 0 ]; then
+  echo "Once these builds finish, refresh the status table:"
+  echo "  python3 scripts/update_readme_status.py && git add README.md && git commit -m 'docs: refresh feedstock status table'"
+fi
