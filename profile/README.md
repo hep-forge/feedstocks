@@ -54,7 +54,7 @@ is the feedstock's release tag; "Published" is what anaconda.org actually serves
 with per-architecture availability.
 
 <!-- status:begin -->
-_Last refreshed: 2026-07-09 (`python3 scripts/update_readme_status.py`)_
+_Last refreshed: 2026-07-18 (`python3 scripts/update_readme_status.py`)_
 
 | Feedstock | Latest tag | Published | amd64 | arm64 |
 |-----------|------------|-----------|-------|-------|
@@ -98,7 +98,7 @@ _Last refreshed: 2026-07-09 (`python3 scripts/update_readme_status.py`)_
 | [hellx](https://github.com/hep-forge/hellx-feedstock) | `3.0` | [`3.0`](https://anaconda.org/hep-forge/hellx) | ✅ | ✅ |
 | [hepmc](https://github.com/hep-forge/hepmc-feedstock) | `3.3.1` | [`3.3.1`](https://anaconda.org/hep-forge/hepmc) | ✅ | ✅ |
 | [hepmc-merger](https://github.com/hep-forge/hepmc-merger-feedstock) | `2.2.0` | [`2.2.0`](https://anaconda.org/hep-forge/hepmc-merger) | ✅ | ✅ |
-| [herwig7](https://github.com/hep-forge/herwig7-feedstock) | `—` | — | ❌ | ❌ |
+| [herwig7](https://github.com/hep-forge/herwig7-feedstock) | `7.3.0` | [`7.3.0`](https://anaconda.org/hep-forge/herwig7) | ✅ | ✅ |
 | [hoppet](https://github.com/hep-forge/hoppet-feedstock) | `2.2.0` | [`2.2.0`](https://anaconda.org/hep-forge/hoppet) | ✅ | ✅ |
 | [inih](https://github.com/hep-forge/inih-feedstock) | `r60` | [`r60`](https://anaconda.org/hep-forge/inih) | ✅ | ✅ |
 | [iregi](https://github.com/hep-forge/iregi-feedstock) | `1.1.0` | [`1.1.0`](https://anaconda.org/hep-forge/iregi) | ✅ | ✅ |
@@ -117,7 +117,7 @@ _Last refreshed: 2026-07-09 (`python3 scripts/update_readme_status.py`)_
 | [npsim](https://github.com/hep-forge/npsim-feedstock) | `1.6.1` | [`1.6.1`](https://anaconda.org/hep-forge/npsim) | ✅ | ✅ |
 | [numdiff](https://github.com/hep-forge/numdiff-feedstock) | `5.9.0` | [`5.9.0`](https://anaconda.org/hep-forge/numdiff) | ✅ | ✅ |
 | [oneloop](https://github.com/hep-forge/oneloop-feedstock) | `3.7.2` | [`3.7.2`](https://anaconda.org/hep-forge/oneloop) | ✅ | ✅ |
-| [pepper](https://github.com/hep-forge/pepper-feedstock) | `—` | — | ❌ | ❌ |
+| [pepper](https://github.com/hep-forge/pepper-feedstock) | `1.12.0` | [`1.12.0`](https://anaconda.org/hep-forge/pepper) | ✅ | ✅ |
 | [pineappl](https://github.com/hep-forge/pineappl-feedstock) | `0.8.6` | [`0.8.6`](https://anaconda.org/hep-forge/pineappl) | ✅ | ✅ |
 | [ploughshare](https://github.com/hep-forge/ploughshare-feedstock) | `0.0.20` | [`0.0.20`](https://anaconda.org/hep-forge/ploughshare) | ✅ | ✅ |
 | [podio](https://github.com/hep-forge/podio-feedstock) | `1.7.0` | [`1.7.0`](https://anaconda.org/hep-forge/podio) | ✅ | ✅ |
@@ -132,6 +132,7 @@ _Last refreshed: 2026-07-09 (`python3 scripts/update_readme_status.py`)_
 | [root-plus](https://github.com/hep-forge/root-plus-feedstock) | `1.0.0` | [`beta` ⚠️](https://anaconda.org/hep-forge/root-plus) | ✅ | ✅ |
 | [sherpa](https://github.com/hep-forge/sherpa-feedstock) | `2.2.16` | [`2.2.16`](https://anaconda.org/hep-forge/sherpa) | ✅ | ✅ |
 | [sz3](https://github.com/hep-forge/sz3-feedstock) | `3.3.1` | [`3.3.1`](https://anaconda.org/hep-forge/sz3) | ✅ | ✅ |
+| [thepeg](https://github.com/hep-forge/thepeg-feedstock) | `2.3.0` | [`2.3.0`](https://anaconda.org/hep-forge/thepeg) | ✅ | ✅ |
 | [xfitter-dev](https://github.com/hep-forge/xfitter-dev-feedstock) | `2.2.1` | [`2.2.1`](https://anaconda.org/hep-forge/xfitter-dev) | ✅ | ✅ |
 | [xfitter](https://github.com/hep-forge/xfitter-feedstock) | `2.2.1` | [`2.2.1`](https://anaconda.org/hep-forge/xfitter) | ✅ | ✅ |
 | [yadism](https://github.com/hep-forge/yadism-feedstock) | `0.12.5` | [`0.12.5`](https://anaconda.org/hep-forge/yadism) | ✅ | ✅ |

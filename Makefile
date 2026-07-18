@@ -34,6 +34,7 @@
 #   make retag <name>   Move latest tag to branch tip + push -> fires the tag build
 #   make retag-all       Same for every feedstock (the rebuild mechanism under tag-only CI)
 #   make readme-status   Refresh the feedstock status table in README.md from anaconda.org
+#   make profile          Same as readme-status, then mirror README.md to profile/README.md
 #   make inspect <name>  Deep-dive one package: published versions per arch with
 #                        SIZE + labels (for spotting cleanup targets), GitHub tags
 #                        + sync verdict, latest runs, error log on failure
@@ -169,6 +170,12 @@ retag-all:
 # version + per-arch state from anaconda.org). Run AFTER builds finish.
 readme-status:
 	@python3 scripts/update_readme_status.py
+
+# Refresh the status table -- alias for readme-status. README.md is a
+# symlink to profile/README.md (the org-profile copy GitHub renders on
+# the hep-forge org page), so updating one updates both transparently;
+# this target exists so "make profile" is the memorable/discoverable name.
+profile: readme-status
 
 # Audit published packages for GLIBC symbol-version leaks: downloads each
 # package's latest linux-64 build, checks every real .so for the highest

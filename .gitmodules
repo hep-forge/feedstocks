@@ -240,3 +240,6 @@
 [submodule "feedstocks/combiner-feedstock"]
 	path = feedstocks/combiner-feedstock
 	url = git@github.com:hep-forge/combiner-feedstock.git
+[submodule "feedstocks/thepeg-feedstock"]
+	path = feedstocks/thepeg-feedstock
+	url = git@github.com:hep-forge/thepeg-feedstock.git
