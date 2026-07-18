@@ -92,7 +92,7 @@ _Last refreshed: 2026-07-18 (`python3 scripts/update_readme_status.py`)_
 | [framel-root](https://github.com/hep-forge/framel-root-feedstock) | `1.0.0` | [`1.0.0`](https://anaconda.org/hep-forge/framel-root) | ✅ | ✅ |
 | [g4hepem](https://github.com/hep-forge/g4hepem-feedstock) | `20251114` | [`20251114`](https://anaconda.org/hep-forge/g4hepem) | ✅ | ✅ |
 | [geant](https://github.com/hep-forge/geant-feedstock) | `11.4.1` | [`11.4.1`](https://anaconda.org/hep-forge/geant) | ✅ | ✅ |
-| [gosam](https://github.com/hep-forge/gosam-feedstock) | `—` | — | ❌ | ❌ |
+| [gosam](https://github.com/hep-forge/gosam-feedstock) | `3.0.3` | [`3.0.3`](https://anaconda.org/hep-forge/gosam) | ✅ | ✅ |
 | [hathor](https://github.com/hep-forge/hathor-feedstock) | `2.0` | [`2.0`](https://anaconda.org/hep-forge/hathor) | ✅ | ✅ |
 | [hell](https://github.com/hep-forge/hell-feedstock) | `3.1` | [`3.1`](https://anaconda.org/hep-forge/hell) | ✅ | ✅ |
 | [hellx](https://github.com/hep-forge/hellx-feedstock) | `3.0` | [`3.0`](https://anaconda.org/hep-forge/hellx) | ✅ | ✅ |
