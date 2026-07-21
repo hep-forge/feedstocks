@@ -203,9 +203,9 @@ for dir in feedstocks/*-feedstock; do
     [ -z "$jname" ] && continue
     [ "$jstatus" != "completed" ] && { jconc="running"; ANY_RUNNING=1; }
     case "$jname" in
-      *amd64*)   amd64="$jconc" ;;
-      *arm64*)   arm64="$jconc" ;;
-      publish*)  publish="$jconc" ;;
+      *amd64*)          amd64="$jconc" ;;
+      "build (arm64,"*) arm64="$jconc" ;;
+      publish*)         publish="$jconc" ;;
       env)
         [[ "$jsteps" =~ Triggered\ by:\ ([a-z]+) ]] && trigger_src="${BASH_REMATCH[1]}"
         ;;
